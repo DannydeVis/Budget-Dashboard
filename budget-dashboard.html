@@ -964,9 +964,17 @@ function exportPDF(){
 
 // ── SYNC MODULE ───────────────────────────────────────────────────────────────
 (function initSync(){
+  const HARDCODED_CFG={
+    apiKey:"AIzaSyCNk73qayCQPlVLhEdc-lxnbwZ9u1fR-WM",
+    authDomain:"budget-dashboard-4fe0d.firebaseapp.com",
+    databaseURL:"https://budget-dashboard-4fe0d-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:"budget-dashboard-4fe0d",
+    storageBucket:"budget-dashboard-4fe0d.firebasestorage.app",
+    messagingSenderId:"794095927584",
+    appId:"1:794095927584:web:2e1a429a8fd43f13e01745"
+  };
   const raw=localStorage.getItem('firebase_config');
-  if(!raw) return;
-  let cfg; try{ cfg=JSON.parse(raw); } catch{ return; }
+  let cfg; try{ cfg=raw?JSON.parse(raw):HARDCODED_CFG; } catch{ cfg=HARDCODED_CFG; }
   if(!cfg.apiKey||!cfg.databaseURL) return;
 
   try{ firebase.initializeApp(cfg); } catch(e){ if(!/already exists/.test(e.message)) return; }
