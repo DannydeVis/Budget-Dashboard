@@ -5,17 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Budget Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<!--
-  SYNC SETUP (eenmalig, ~5 minuten):
-  1. Ga naar console.firebase.google.com → nieuw project aanmaken
-  2. Build → Realtime Database → Aanmaken → Vergrendelde modus
-  3. Rules-tab → vervang de regels door:
-     { "rules": { "u": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } } } }
-     → Publiceren
-  4. Authentication → Aanmeldmethoden → Anoniem + Google inschakelen
-  5. Projectinstellingen → Je apps → Web-app toevoegen → kopieer het firebaseConfig object
-  6. Klik op "☁ Sync" in het dashboard → plak de JSON config → sla op → meld aan met Google
--->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -29,13 +18,7 @@
   --radius:8px; --shadow:0 2px 12px rgba(44,36,24,.07);
 }
 body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--text-dark); min-height:100vh; padding-bottom:100px; }
-
-.topbar {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:14px 32px; background:var(--white);
-  border-bottom:1px solid var(--border);
-  position:sticky; top:0; z-index:50;
-}
+.topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 32px; background:var(--white); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:50; }
 .topbar-brand { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:300; color:var(--text-dark); letter-spacing:.04em; }
 .topbar-brand span { font-style:italic; color:var(--text-mid); }
 .month-nav { display:flex; align-items:center; gap:12px; }
@@ -43,13 +26,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .month-btn:hover { background:var(--sand); }
 .month-current { font-family:'Cormorant Garamond',serif; font-size:17px; color:var(--text-dark); min-width:130px; text-align:center; }
 .page { max-width:1280px; margin:0 auto; padding:24px 24px 40px; }
-.top-strip {
-  display:grid; grid-template-columns:1fr auto;
-  gap:20px; align-items:center;
-  background:var(--white); border-radius:var(--radius);
-  border:1px solid var(--border); padding:32px 36px;
-  margin-bottom:20px; box-shadow:var(--shadow);
-}
+.top-strip { display:grid; grid-template-columns:1fr auto; gap:20px; align-items:center; background:var(--white); border-radius:var(--radius); border:1px solid var(--border); padding:32px 36px; margin-bottom:20px; box-shadow:var(--shadow); }
 .hero-left {}
 .hero-label { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-light); margin-bottom:6px; }
 .hero-amount { font-family:'Cormorant Garamond',serif; font-size:72px; font-weight:300; line-height:1; transition:color .35s; }
@@ -196,59 +173,31 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .debt-del-btn { background:none; border:none; color:var(--border); cursor:pointer; font-size:15px; padding:0 0 0 8px; transition:color .12s; flex-shrink:0; }
 .debt-del-btn:hover { color:var(--bad); }
 @media (max-width:900px) {
-  .topbar { padding:12px 16px; }
-  .page { padding:16px 12px 40px; }
+  .topbar { padding:12px 16px; } .page { padding:16px 12px 40px; }
   .top-strip { grid-template-columns:1fr; gap:16px; padding:24px 20px; }
-  .main-grid { grid-template-columns:1fr; }
-  .tracker-grid { grid-template-columns:1fr; }
-  .stat-row { grid-template-columns:1fr 1fr; }
-  .hero-amount { font-size:52px; }
-  .fab-wrap { bottom:20px; }
+  .main-grid { grid-template-columns:1fr; } .tracker-grid { grid-template-columns:1fr; }
+  .stat-row { grid-template-columns:1fr 1fr; } .hero-amount { font-size:52px; } .fab-wrap { bottom:20px; }
 }
-@media (max-width:500px) {
-  .stat-row { grid-template-columns:1fr; }
-  .month-current { min-width:100px; font-size:15px; }
-}
+@media (max-width:500px) { .stat-row { grid-template-columns:1fr; } .month-current { min-width:100px; font-size:15px; } }
 .sync-dot { font-size:11px; transition:color .3s; }
-.sync-dot.online  { color: var(--good); }
-.sync-dot.offline { color: var(--border); }
-.sync-dot.pending { color: var(--warn); }
+.sync-dot.online  { color:var(--good); } .sync-dot.offline { color:var(--border); } .sync-dot.pending { color:var(--warn); }
 .topbar-actions { display:flex; align-items:center; gap:8px; }
-.topbar-btn {
-  background:none; border:1px solid var(--border); border-radius:6px;
-  padding:6px 12px; font-size:11px; font-family:'DM Sans',sans-serif;
-  color:var(--text-light); cursor:pointer; letter-spacing:.04em;
-  transition:background .15s, color .15s; white-space:nowrap;
-}
+.topbar-btn { background:none; border:1px solid var(--border); border-radius:6px; padding:6px 12px; font-size:11px; font-family:'DM Sans',sans-serif; color:var(--text-light); cursor:pointer; letter-spacing:.04em; transition:background .15s,color .15s; white-space:nowrap; }
 .topbar-btn:hover { background:var(--sand); color:var(--text-dark); }
 .topbar-btn.sync-active { color:var(--good); border-color:var(--good); }
-.sync-modal-box {
-  background:var(--white); width:100%; max-width:440px; border-radius:16px;
-  padding:32px 28px 28px; box-shadow:0 20px 60px rgba(44,36,24,.2);
-}
-.sync-modal-box textarea {
-  width:100%; border:1px solid var(--border); border-radius:6px;
-  background:var(--cream); font-size:12px; font-family:monospace;
-  color:var(--text-dark); padding:10px 12px; outline:none; resize:vertical;
-  margin-top:8px; line-height:1.5;
-}
-.sync-modal-box textarea:focus { border-color:var(--text-mid); }
+.sync-modal-box { background:var(--white); width:100%; max-width:440px; border-radius:16px; padding:32px 28px 28px; box-shadow:0 20px 60px rgba(44,36,24,.2); }
 .sync-status-text { font-size:13px; color:var(--text-mid); margin-bottom:16px; line-height:1.5; }
 .sync-status-text strong { color:var(--text-dark); }
 @media print {
-  .topbar, .fab-wrap, .save-bar, .toast, .modal-overlay,
-  .sync-modal-overlay, .topbar-actions { display:none !important; }
-  body { background:white; padding:0; font-size:11pt; color:#2c2418; }
-  .page { padding:0; max-width:none; }
+  .topbar,.fab-wrap,.save-bar,.toast,.modal-overlay,.sync-modal-overlay,.topbar-actions { display:none !important; }
+  body { background:white; padding:0; font-size:11pt; color:#2c2418; } .page { padding:0; max-width:none; }
   .top-strip { background:white; border:none; border-bottom:2px solid #ddd5c8; padding:12px 0; margin-bottom:12px; grid-template-columns:1fr auto; }
-  .hero-amount { font-size:44pt; }
-  .main-grid { grid-template-columns:1fr 1fr; gap:12px; }
-  .tracker-grid { grid-template-columns:1fr 1fr; gap:12px; }
-  .stat-row { grid-template-columns:1fr 1fr 1fr 1fr; margin-bottom:12px; }
+  .hero-amount { font-size:44pt; } .main-grid { grid-template-columns:1fr 1fr; gap:12px; }
+  .tracker-grid { grid-template-columns:1fr 1fr; gap:12px; } .stat-row { grid-template-columns:1fr 1fr 1fr 1fr; margin-bottom:12px; }
   .card { box-shadow:none; border:1px solid #ddd5c8; break-inside:avoid; }
   .card-header { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .del-btn, .tx-del, .debt-del-btn, .debt-add-form, .add-row, .add-btn { display:none !important; }
-  @page { margin:1.5cm; size: A4; }
+  .del-btn,.tx-del,.debt-del-btn,.debt-add-form,.add-row,.add-btn { display:none !important; }
+  @page { margin:1.5cm; size:A4; }
 }
 </style>
 </head>
@@ -263,14 +212,14 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
   <div class="topbar-actions">
     <span id="syncDot" class="sync-dot offline" title="Sync status">●</span>
     <button id="syncBtn" class="topbar-btn" onclick="openSyncModal()">☁ Sync</button>
-    <button class="topbar-btn" onclick="exportPDF()" title="Exporteer huidige maand als PDF">⬇ PDF</button>
-    <button class="topbar-btn" onclick="resetAll()" title="Verwijder alle data en begin opnieuw">↺ Reset</button>
+    <button class="topbar-btn" onclick="exportPDF()">⬇ PDF</button>
+    <button class="topbar-btn" onclick="resetAll()">↺ Reset</button>
   </div>
 </div>
 <div class="page">
   <div class="top-strip">
     <div class="hero-left">
-      <div class="header-month" id="headerMonth" style="font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-light);margin-bottom:4px;"></div>
+      <div id="headerMonth" style="font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-light);margin-bottom:4px;"></div>
       <div class="hero-label">Resterend te besteden</div>
       <div class="hero-amount zero" id="heroAmount">€ 0,00</div>
       <div class="hero-rollover" id="heroRollover" style="display:none">Incl. rollover:&nbsp;<b id="rolloverAmt"></b></div>
@@ -301,32 +250,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
       </div>
     </div>
     <div class="right-col">
-      <div class="card">
-        <div class="card-header rose" style="border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-          <span>Schulden Overzicht</span><span id="debtTotalBadge" style="font-size:12px;font-weight:400;opacity:.8"></span>
-        </div>
-        <div id="debtOverview" class="debt-overview"></div>
-      </div>
-      <div class="card">
-        <div class="donut-wrap">
-          <svg class="donut-svg" viewBox="0 0 42 42" id="donutSvg"></svg>
-          <div class="donut-legend" id="donutLegend"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header neutral" style="border-bottom:1px solid var(--border);">Budget vs Actueel</div>
-        <div class="bar-wrap">
-          <div class="bar-legend">
-            <div class="bar-legend-item"><div class="bar-legend-dot" style="background:var(--peach)"></div>Budget</div>
-            <div class="bar-legend-item"><div class="bar-legend-dot" style="background:var(--green-soft)"></div>Actueel</div>
-          </div>
-          <div id="barRows"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header neutral" style="border-bottom:1px solid var(--border);">Recente transacties</div>
-        <div id="recentTx" style="padding:0"></div>
-      </div>
+      <div class="card"><div class="card-header rose" style="border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;"><span>Schulden Overzicht</span><span id="debtTotalBadge" style="font-size:12px;font-weight:400;opacity:.8"></span></div><div id="debtOverview" class="debt-overview"></div></div>
+      <div class="card"><div class="donut-wrap"><svg class="donut-svg" viewBox="0 0 42 42" id="donutSvg"></svg><div class="donut-legend" id="donutLegend"></div></div></div>
+      <div class="card"><div class="card-header neutral" style="border-bottom:1px solid var(--border);">Budget vs Actueel</div><div class="bar-wrap"><div class="bar-legend"><div class="bar-legend-item"><div class="bar-legend-dot" style="background:var(--peach)"></div>Budget</div><div class="bar-legend-item"><div class="bar-legend-dot" style="background:var(--green-soft)"></div>Actueel</div></div><div id="barRows"></div></div></div>
+      <div class="card"><div class="card-header neutral" style="border-bottom:1px solid var(--border);">Recente transacties</div><div id="recentTx" style="padding:0"></div></div>
     </div>
   </div>
 </div>
@@ -336,23 +263,16 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="modal-title">Transactie toevoegen</div>
     <div class="modal-field"><label>Bedrag</label><div class="modal-amount-wrap"><span class="modal-amount-prefix">€</span><input type="number" inputmode="decimal" id="txAmount" placeholder="0,00"></div></div>
     <div class="modal-field"><label>Categorie</label><select id="txCategory"></select></div>
-    <div class="modal-field"><label>Omschrijving <span style="color:var(--text-light);font-size:9px;letter-spacing:0">(optioneel)</span></label><input type="text" id="txDesc" placeholder="Bijv. Albert Heijn"></div>
+    <div class="modal-field"><label>Omschrijving <span style="color:var(--text-light);font-size:9px;">(optioneel)</span></label><input type="text" id="txDesc" placeholder="Bijv. Albert Heijn"></div>
     <div class="modal-actions"><button class="btn-secondary" onclick="closeModal()">Annuleren</button><button class="btn-primary" onclick="submitTx()">Toevoegen</button></div>
   </div>
 </div>
 <div class="modal-overlay sync-modal-overlay" id="syncModalOverlay" onclick="syncOverlayClick(event)">
   <div class="sync-modal-box">
     <div class="modal-title">Sync instellen</div>
-    <div id="syncStepConfig">
-      <p class="sync-status-text">Plak hier het <strong>firebaseConfig</strong> object uit de Firebase-console (als JSON).</p>
-      <label style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-light)">Firebase configuratie</label>
-      <textarea id="fbConfigInput" rows="7" placeholder='{"apiKey":"AIza..."}'></textarea>
-      <div class="modal-actions"><button class="btn-secondary" onclick="closeSyncModal()">Annuleren</button><button class="btn-primary" onclick="saveFBConfig()">Opslaan &amp; verbinden</button></div>
-    </div>
-    <div id="syncStepAuth" style="display:none">
+    <div id="syncStepAuth">
       <p class="sync-status-text" id="syncAuthStatus">Meld aan met je Google-account om sync in te schakelen.</p>
       <div class="modal-actions"><button class="btn-secondary" onclick="closeSyncModal()">Sluiten</button><button class="btn-primary" id="syncAuthBtn" onclick="signInWithGoogle()">Aanmelden met Google</button></div>
-      <div style="margin-top:14px;text-align:center;"><button style="background:none;border:none;font-size:11px;color:var(--text-light);cursor:pointer;text-decoration:underline;" onclick="resetFBConfig()">Andere Firebase config instellen</button></div>
     </div>
   </div>
 </div>
@@ -489,13 +409,12 @@ function saveLoans(){localStorage.setItem(LOANS_KEY,JSON.stringify(loans));}
 let loans=loadLoans();
 function renderDebtOverview(){
   const el=document.getElementById('debtOverview'),badge=document.getElementById('debtTotalBadge');
-  const totalRemaining=loans.reduce((s,l)=>s+num(l.remaining),0);
-  badge.textContent=loans.length>0?`Totaal open: ${fmt(totalRemaining,true)}`:'';
+  badge.textContent=loans.length>0?`Totaal open: ${fmt(loans.reduce((s,l)=>s+num(l.remaining),0),true)}`:'';
   let html='';
   loans.forEach((loan,i)=>{
     const pct=loan.total>0?Math.max(0,Math.min(100,((num(loan.total)-num(loan.remaining))/num(loan.total))*100)):0;
     const paid=num(loan.remaining)<=0,cls=paid?'done':pct>=75?'almost':'',monthsLeft=loan.monthly>0?Math.ceil(num(loan.remaining)/num(loan.monthly)):null;
-    html+=`<div class="debt-loan"><div class="debt-loan-header"><div class="debt-loan-name">${esc(loan.name)}</div><div class="debt-loan-remaining ${paid?'paid':''}}">${paid?'Afgelost ✓':fmt(num(loan.remaining),true)}</div><button class="debt-del-btn" onclick="deleteLoan(${i})" title="Verwijder">×</button></div><div class="debt-loan-meta"><div class="debt-meta-item"><div class="debt-meta-label">Startbedrag</div><div class="debt-meta-val">${fmt(num(loan.total),true)}</div></div><div class="debt-meta-item"><div class="debt-meta-label">Maandlast</div><div class="debt-meta-val">${fmt(num(loan.monthly),true)}</div></div>${loan.rate?`<div class="debt-meta-item"><div class="debt-meta-label">Rente</div><div class="debt-meta-val">${loan.rate}%</div></div>`:''}${monthsLeft&&!paid?`<div class="debt-meta-item"><div class="debt-meta-label">Nog ca.</div><div class="debt-meta-val">${monthsLeft} mnd</div></div>`:''}</div><div class="debt-prog-section"><div class="debt-prog-labels"><span>Afgelost: ${Math.round(pct)}%</span><span>${paid?'Volledig afgelost':fmt(num(loan.total)-num(loan.remaining),true)+' van '+fmt(num(loan.total),true)}</span></div><div class="debt-prog-wrap"><div class="debt-prog-bar ${cls}" style="width:${pct}%"></div></div></div></div>`;
+    html+=`<div class="debt-loan"><div class="debt-loan-header"><div class="debt-loan-name">${esc(loan.name)}</div><div class="debt-loan-remaining ${paid?'paid':''}">${paid?'Afgelost ✓':fmt(num(loan.remaining),true)}</div><button class="debt-del-btn" onclick="deleteLoan(${i})">×</button></div><div class="debt-loan-meta"><div class="debt-meta-item"><div class="debt-meta-label">Startbedrag</div><div class="debt-meta-val">${fmt(num(loan.total),true)}</div></div><div class="debt-meta-item"><div class="debt-meta-label">Maandlast</div><div class="debt-meta-val">${fmt(num(loan.monthly),true)}</div></div>${loan.rate?`<div class="debt-meta-item"><div class="debt-meta-label">Rente</div><div class="debt-meta-val">${loan.rate}%</div></div>`:''}${monthsLeft&&!paid?`<div class="debt-meta-item"><div class="debt-meta-label">Nog ca.</div><div class="debt-meta-val">${monthsLeft} mnd</div></div>`:''}</div><div class="debt-prog-section"><div class="debt-prog-labels"><span>Afgelost: ${Math.round(pct)}%</span><span>${paid?'Volledig afgelost':fmt(num(loan.total)-num(loan.remaining),true)+' van '+fmt(num(loan.total),true)}</span></div><div class="debt-prog-wrap"><div class="debt-prog-bar ${cls}" style="width:${pct}%"></div></div></div></div>`;
   });
   html+=`<div class="debt-add-form"><div class="debt-field"><label>Naam</label><input type="text" id="ln_name" placeholder="Bijv. Auto lening"></div><div class="debt-field"><label>Totaal</label><input type="number" inputmode="decimal" id="ln_total" placeholder="15000"></div><div class="debt-field"><label>Resterend</label><input type="number" inputmode="decimal" id="ln_remaining" placeholder="15000"></div><div class="debt-field"><label>Maandlast</label><input type="number" inputmode="decimal" id="ln_monthly" placeholder="350"></div><div class="debt-field"><label>Rente %</label><input type="number" inputmode="decimal" id="ln_rate" placeholder="4.5"></div><button class="debt-add-btn" onclick="addLoan()">+ Toevoegen</button></div>`;
   el.innerHTML=html;
@@ -537,10 +456,7 @@ window.addEventListener('visibilitychange',()=>{if(document.hidden&&dirty)saveDa
 window.addEventListener('beforeunload',()=>{if(dirty)saveData();});
 function exportPDF(){const orig=document.title;document.title=`Budget Dashboard – ${MONTHS[curM]} ${curY}`;window.print();document.title=orig;}
 (function initSync(){
-  const HARDCODED_CFG={apiKey:"AIzaSyCNk73qayCQPlVLhEdc-lxnbwZ9u1fR-WM",authDomain:"budget-dashboard-4fe0d.firebaseapp.com",databaseURL:"https://budget-dashboard-4fe0d-default-rtdb.europe-west1.firebasedatabase.app",projectId:"budget-dashboard-4fe0d",storageBucket:"budget-dashboard-4fe0d.firebasestorage.app",messagingSenderId:"794095927584",appId:"1:794095927584:web:2e1a429a8fd43f13e01745"};
-  const raw=localStorage.getItem('firebase_config');
-  let cfg;try{cfg=raw?JSON.parse(raw):HARDCODED_CFG;}catch{cfg=HARDCODED_CFG;}
-  if(!cfg.apiKey||!cfg.databaseURL)return;
+  const cfg={apiKey:"AIzaSyCNk73qayCQPlVLhEdc-lxnbwZ9u1fR-WM",authDomain:"budget-dashboard-4fe0d.firebaseapp.com",databaseURL:"https://budget-dashboard-4fe0d-default-rtdb.europe-west1.firebasedatabase.app",projectId:"budget-dashboard-4fe0d",storageBucket:"budget-dashboard-4fe0d.firebasestorage.app",messagingSenderId:"794095927584",appId:"1:794095927584:web:2e1a429a8fd43f13e01745"};
   try{firebase.initializeApp(cfg);}catch(e){if(!/already exists/.test(e.message))return;}
   const auth=firebase.auth(),db=firebase.database();
   db.setPersistenceEnabled(true);
@@ -566,33 +482,27 @@ function _updateSyncUI(user){
   const btn=document.getElementById('syncBtn'),dot=document.getElementById('syncDot');
   if(!btn)return;
   if(!user||user.isAnonymous){btn.textContent='☁ Sync';btn.className='topbar-btn';btn.onclick=openSyncModal;if(dot)dot.className='sync-dot offline';}
-  else{const name=(user.displayName||user.email||'').split(' ')[0]||'Sync';btn.textContent='☁ '+name;btn.className='topbar-btn sync-active';btn.onclick=openSyncModal;}
+  else{btn.textContent='☁ '+(user.displayName||user.email||'').split(' ')[0];btn.className='topbar-btn sync-active';btn.onclick=openSyncModal;}
 }
-function saveFBConfig(){const v=document.getElementById('fbConfigInput').value.trim();let parsed;try{parsed=JSON.parse(v);}catch{showToast('Ongeldige JSON');return;}if(!parsed.apiKey||!parsed.databaseURL){showToast('Ontbrekende velden');return;}localStorage.setItem('firebase_config',v);showToast('Config opgeslagen – pagina wordt herladen...');setTimeout(()=>location.reload(),1400);}
-function resetFBConfig(){localStorage.removeItem('firebase_config');document.getElementById('syncStepConfig').style.display='';document.getElementById('syncStepAuth').style.display='none';}
 function signInWithGoogle(){
-  if(!window._firebaseAuth){showToast('Stel eerst Firebase in');return;}
+  if(!window._firebaseAuth){showToast('Firebase niet geladen');return;}
   const provider=new firebase.auth.GoogleAuthProvider(),user=window._firebaseAuth.currentUser;
   const p=(user&&user.isAnonymous)?user.linkWithPopup(provider).catch(e=>{if(e.code==='auth/credential-already-in-use')return window._firebaseAuth.signInWithPopup(provider);return Promise.reject(e);}):window._firebaseAuth.signInWithPopup(provider);
   p.then(()=>{closeSyncModal();showToast('Sync ingeschakeld!');}).catch(e=>showToast('Aanmelden mislukt: '+e.message));
 }
 function openSyncModal(){
-  const hasCfg=!!localStorage.getItem('firebase_config')||!!window._firebaseAuth;
-  document.getElementById('syncStepConfig').style.display=hasCfg?'none':'';
-  document.getElementById('syncStepAuth').style.display=hasCfg?'':'none';
-  if(hasCfg){
-    const user=window._firebaseAuth?.currentUser,statusEl=document.getElementById('syncAuthStatus'),authBtn=document.getElementById('syncAuthBtn');
-    if(statusEl){
-      if(user&&!user.isAnonymous){statusEl.innerHTML=`Aangemeld als <strong>${user.displayName||user.email}</strong>. Data wordt automatisch gesynchroniseerd.`;if(authBtn){authBtn.textContent='Afmelden';authBtn.onclick=()=>{window._firebaseAuth.signOut().then(()=>{closeSyncModal();showToast('Afgemeld');});};}}
-      else{statusEl.textContent='Meld aan met je Google-account om sync in te schakelen.';if(authBtn){authBtn.textContent='Aanmelden met Google';authBtn.onclick=signInWithGoogle;}}
-    }
+  document.getElementById('syncStepAuth').style.display='';
+  const user=window._firebaseAuth?.currentUser,statusEl=document.getElementById('syncAuthStatus'),authBtn=document.getElementById('syncAuthBtn');
+  if(statusEl){
+    if(user&&!user.isAnonymous){statusEl.innerHTML=`Aangemeld als <strong>${user.displayName||user.email}</strong>. Data wordt automatisch gesynchroniseerd.`;if(authBtn){authBtn.textContent='Afmelden';authBtn.onclick=()=>{window._firebaseAuth.signOut().then(()=>{closeSyncModal();showToast('Afgemeld');});};} }
+    else{statusEl.textContent='Meld aan met je Google-account om sync in te schakelen.';if(authBtn){authBtn.textContent='Aanmelden met Google';authBtn.onclick=signInWithGoogle;}}
   }
   document.getElementById('syncModalOverlay').classList.add('open');
 }
 function closeSyncModal(){document.getElementById('syncModalOverlay').classList.remove('open');}
 function syncOverlayClick(e){if(e.target===document.getElementById('syncModalOverlay'))closeSyncModal();}
 const _origResetAll=resetAll;
-resetAll=function(){_origResetAll();if(window._firebaseDB&&window._firebaseAuth?.currentUser){const uid=window._firebaseAuth.currentUser.uid;window._firebaseDB.ref(`u/${uid}`).remove().catch(()=>{});};};
+resetAll=function(){_origResetAll();if(window._firebaseDB&&window._firebaseAuth?.currentUser){window._firebaseDB.ref(`u/${window._firebaseAuth.currentUser.uid}`).remove().catch(()=>{});};};
 </script>
 </body>
 </html>
