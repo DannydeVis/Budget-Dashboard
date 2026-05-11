@@ -1045,6 +1045,10 @@ function exportPDF(){
 
   window._firebaseAuth=auth;
   window._firebaseDB=db;
+
+  auth.getRedirectResult().then(result=>{
+    if(result&&result.user) showToast('Sync ingeschakeld!');
+  }).catch(e=>{ if(e.code) showToast('Aanmelden mislukt: '+e.message); });
 })();
 
 function _updateSyncUI(user){
@@ -1076,13 +1080,20 @@ function saveFBConfig(){
 function signInWithGoogle(){
   if(!window._firebaseAuth){ showToast('Stel eerst Firebase in'); return; }
   const provider=new firebase.auth.GoogleAuthProvider();
-  const user=window._firebaseAuth.currentUser;
+  const auth=window._firebaseAuth;
+  const user=auth.currentUser;
+  const isSafariMobile=/iP(hone|ad|od)/i.test(navigator.userAgent)||(/Safari/i.test(navigator.userAgent)&&!/Chrome/i.test(navigator.userAgent));
+  if(isSafariMobile){
+    (user&&user.isAnonymous?user.linkWithRedirect(provider):auth.signInWithRedirect(provider))
+      .catch(e=>showToast('Aanmelden mislukt: '+e.message));
+    return;
+  }
   const p=(user&&user.isAnonymous)
     ?user.linkWithPopup(provider).catch(e=>{
-        if(e.code==='auth/credential-already-in-use') return window._firebaseAuth.signInWithPopup(provider);
+        if(e.code==='auth/credential-already-in-use') return auth.signInWithPopup(provider);
         return Promise.reject(e);
       })
-    :window._firebaseAuth.signInWithPopup(provider);
+    :auth.signInWithPopup(provider);
   p.then(()=>{ closeSyncModal(); showToast('Sync ingeschakeld!'); })
    .catch(e=>showToast('Aanmelden mislukt: '+e.message));
 }
