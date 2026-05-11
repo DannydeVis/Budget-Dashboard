@@ -35,7 +35,7 @@
   --border:#ddd5c8; --white:#fff; --good:#8aab78; --bad:#c97070; --warn:#d4a060;
   --radius:8px; --shadow:0 2px 12px rgba(44,36,24,.07);
 }
-body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--text-dark); min-height:100vh; padding-bottom:100px; }
+body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--text-dark); min-height:100vh; padding-bottom:120px; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; }
 
 /* ── TOP BAR ── */
 .topbar {
@@ -247,7 +247,11 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 /* ── RESPONSIVE ── */
 @media (max-width:900px) {
-  .topbar { padding:12px 16px; }
+  .topbar { padding:10px 16px; flex-wrap:wrap; gap:0; row-gap:8px; }
+  .topbar-brand { order:1; flex:1; }
+  .topbar-actions { order:2; gap:6px; }
+  .month-nav { order:3; width:100%; justify-content:center; padding-top:8px; border-top:1px solid var(--border); }
+  .month-current { min-width:120px; }
   .page { padding:16px 12px 40px; }
   .top-strip { grid-template-columns:1fr; gap:16px; padding:24px 20px; }
   .main-grid { grid-template-columns:1fr; }
@@ -256,8 +260,13 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
   .hero-amount { font-size:52px; }
   .fab-wrap { bottom:20px; }
 }
+@media (max-width:600px) {
+  .btn-label { display:none; }
+  .topbar-btn { padding:7px 10px; font-size:15px; }
+  .topbar-actions { gap:4px; }
+}
 @media (max-width:500px) {
-  .stat-row { grid-template-columns:1fr; }
+  .stat-row { grid-template-columns:1fr 1fr; }
   .month-current { min-width:100px; font-size:15px; }
 }
 
@@ -336,9 +345,9 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
   </div>
   <div class="topbar-actions">
     <span id="syncDot" class="sync-dot offline" title="Sync status">&#9679;</span>
-    <button id="syncBtn" class="topbar-btn" onclick="openSyncModal()">&#9729; Sync</button>
-    <button class="topbar-btn" onclick="exportPDF()" title="Exporteer huidige maand als PDF">&#11015; PDF</button>
-    <button class="topbar-btn" onclick="resetAll()" title="Verwijder alle data en begin opnieuw">&#8634; Reset</button>
+    <button id="syncBtn" class="topbar-btn" onclick="openSyncModal()">&#9729;<span class="btn-label"> Sync</span></button>
+    <button class="topbar-btn" onclick="exportPDF()" title="Exporteer huidige maand als PDF">&#11015;<span class="btn-label"> PDF</span></button>
+    <button class="topbar-btn" onclick="resetAll()" title="Verwijder alle data en begin opnieuw">&#8634;<span class="btn-label"> Reset</span></button>
   </div>
 </div>
 
