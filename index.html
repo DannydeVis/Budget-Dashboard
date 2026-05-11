@@ -514,6 +514,13 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
     <!-- Stap 2: Inloggen / status -->
     <div id="syncStepAuth">
+      <div id="syncUserInfo" style="display:none;align-items:center;gap:12px;margin-bottom:16px;padding:14px 16px;background:var(--green-soft);border-radius:8px;">
+        <img id="syncUserPhoto" src="" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;display:none">
+        <div>
+          <div id="syncUserName" style="font-weight:500;color:var(--text-dark);font-size:14px;"></div>
+          <div id="syncUserEmail" style="font-size:12px;color:var(--text-mid);margin-top:2px;"></div>
+        </div>
+      </div>
       <p class="sync-status-text" id="syncAuthStatus">Meld aan met je Google-account om sync in te schakelen.</p>
       <div class="modal-actions">
         <button class="btn-secondary" onclick="closeSyncModal()">Sluiten</button>
@@ -1047,7 +1054,11 @@ function exportPDF(){
   window._firebaseDB=db;
 
   auth.getRedirectResult().then(result=>{
-    if(result&&result.user) showToast('Sync ingeschakeld!');
+    if(result&&result.user){
+      closeSyncModal();
+      _updateSyncUI(result.user);
+      showToast('Aangemeld als '+(result.user.displayName||result.user.email));
+    }
   }).catch(e=>{ if(e.code) showToast('Aanmelden mislukt: '+e.message); });
 })();
 
@@ -1056,15 +1067,16 @@ function _updateSyncUI(user){
   const dot=document.getElementById('syncDot');
   if(!btn) return;
   if(!user||user.isAnonymous){
-    btn.textContent='☁ Sync';
+    btn.innerHTML='☁<span class="btn-label"> Sync</span>';
     btn.className='topbar-btn';
     btn.onclick=openSyncModal;
     if(dot) dot.className='sync-dot offline';
   } else {
     const name=(user.displayName||user.email||'').split(' ')[0]||'Sync';
-    btn.textContent='☁ '+name;
+    btn.innerHTML='✓<span class="btn-label"> '+name+'</span>';
     btn.className='topbar-btn sync-active';
     btn.onclick=openSyncModal;
+    if(dot) dot.className='sync-dot online';
   }
 }
 
@@ -1104,14 +1116,21 @@ function openSyncModal(){
   const user=window._firebaseAuth?.currentUser;
   const statusEl=document.getElementById('syncAuthStatus');
   const authBtn=document.getElementById('syncAuthBtn');
-  if(statusEl){
-    if(user&&!user.isAnonymous){
-      statusEl.innerHTML=`Aangemeld als <strong>${user.displayName||user.email}</strong>. Data wordt automatisch gesynchroniseerd.`;
-      if(authBtn){ authBtn.textContent='Afmelden'; authBtn.onclick=()=>{ window._firebaseAuth.signOut().then(()=>{ closeSyncModal(); showToast('Afgemeld'); }); }; }
-    } else {
-      statusEl.textContent='Meld aan met je Google-account om sync in te schakelen.';
-      if(authBtn){ authBtn.textContent='Aanmelden met Google'; authBtn.onclick=signInWithGoogle; }
-    }
+  const userInfo=document.getElementById('syncUserInfo');
+  const userPhoto=document.getElementById('syncUserPhoto');
+  const userName=document.getElementById('syncUserName');
+  const userEmail=document.getElementById('syncUserEmail');
+  if(user&&!user.isAnonymous){
+    if(userInfo){ userInfo.style.display='flex'; }
+    if(userName){ userName.textContent=user.displayName||''; }
+    if(userEmail){ userEmail.textContent=user.email||''; }
+    if(userPhoto&&user.photoURL){ userPhoto.src=user.photoURL; userPhoto.style.display='block'; }
+    if(statusEl){ statusEl.textContent='Sync is actief. Jouw data wordt automatisch opgeslagen.'; }
+    if(authBtn){ authBtn.textContent='Afmelden'; authBtn.style.background='var(--bad)'; authBtn.onclick=()=>{ window._firebaseAuth.signOut().then(()=>{ closeSyncModal(); showToast('Afgemeld'); }); }; }
+  } else {
+    if(userInfo){ userInfo.style.display='none'; }
+    if(statusEl){ statusEl.textContent='Meld aan met je Google-account om sync in te schakelen.'; }
+    if(authBtn){ authBtn.textContent='Aanmelden met Google'; authBtn.style.background=''; authBtn.onclick=signInWithGoogle; }
   }
   document.getElementById('syncModalOverlay').classList.add('open');
 }
