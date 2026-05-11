@@ -1021,9 +1021,13 @@ function exportPDF(){
   }
 
   auth.onAuthStateChanged(user=>{
-    if(user){
+    if(user&&!user.isAnonymous){
       syncUID=user.uid;
       _updateSyncUI(user);
+      if(localStorage.getItem('auth_redirect_pending')){
+        localStorage.removeItem('auth_redirect_pending');
+        showToast('Aangemeld als '+(user.displayName||user.email));
+      }
       db.ref(`u/${syncUID}/t`).on('value',s=>{
         const v=s.val();
         if(v&&JSON.stringify(v)!==JSON.stringify(template)){ template=v; state=buildState(); renderAll(); }
@@ -1036,10 +1040,17 @@ function exportPDF(){
       db.ref(`u/${syncUID}/t`).set(template).catch(()=>{});
       db.ref(`u/${syncUID}/x/${curY}/${curM}`).set(transactions).catch(()=>{});
       db.ref(`u/${syncUID}/l`).set(loans).catch(()=>{});
-    } else {
+    } else if(!user){
       syncUID=null;
       auth.signInAnonymously().catch(()=>{});
       _updateSyncUI(null);
+    } else {
+      syncUID=null;
+      _updateSyncUI(null);
+      if(localStorage.getItem('auth_redirect_pending')){
+        localStorage.removeItem('auth_redirect_pending');
+        showToast('Aanmelden mislukt — probeer opnieuw');
+      }
     }
   });
 
@@ -1052,14 +1063,6 @@ function exportPDF(){
 
   window._firebaseAuth=auth;
   window._firebaseDB=db;
-
-  auth.getRedirectResult().then(result=>{
-    if(result&&result.user){
-      closeSyncModal();
-      _updateSyncUI(result.user);
-      showToast('Aangemeld als '+(result.user.displayName||result.user.email));
-    }
-  }).catch(e=>{ if(e.code) showToast('Aanmelden mislukt: '+e.message); });
 })();
 
 function _updateSyncUI(user){
@@ -1094,20 +1097,22 @@ function signInWithGoogle(){
   const provider=new firebase.auth.GoogleAuthProvider();
   const auth=window._firebaseAuth;
   const user=auth.currentUser;
-  const isSafariMobile=/iP(hone|ad|od)/i.test(navigator.userAgent)||(/Safari/i.test(navigator.userAgent)&&!/Chrome/i.test(navigator.userAgent));
-  if(isSafariMobile){
+  const isMobile=/Mobi|Android|iP(hone|ad|od)/i.test(navigator.userAgent);
+  if(isMobile){
+    localStorage.setItem('auth_redirect_pending','1');
+    showToast('Doorsturen naar Google…');
     (user&&user.isAnonymous?user.linkWithRedirect(provider):auth.signInWithRedirect(provider))
-      .catch(e=>showToast('Aanmelden mislukt: '+e.message));
-    return;
+      .catch(e=>{ localStorage.removeItem('auth_redirect_pending'); showToast('Aanmelden mislukt: '+e.message); });
+  } else {
+    const p=(user&&user.isAnonymous)
+      ?user.linkWithPopup(provider).catch(e=>{
+          if(e.code==='auth/credential-already-in-use') return auth.signInWithPopup(provider);
+          return Promise.reject(e);
+        })
+      :auth.signInWithPopup(provider);
+    p.then(()=>{ closeSyncModal(); showToast('Sync ingeschakeld!'); })
+     .catch(e=>showToast('Aanmelden mislukt: '+e.message));
   }
-  const p=(user&&user.isAnonymous)
-    ?user.linkWithPopup(provider).catch(e=>{
-        if(e.code==='auth/credential-already-in-use') return auth.signInWithPopup(provider);
-        return Promise.reject(e);
-      })
-    :auth.signInWithPopup(provider);
-  p.then(()=>{ closeSyncModal(); showToast('Sync ingeschakeld!'); })
-   .catch(e=>showToast('Aanmelden mislukt: '+e.message));
 }
 
 function openSyncModal(){
