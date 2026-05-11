@@ -5,6 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Budget Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<!--
+  SYNC SETUP (eenmalig, ~5 minuten):
+  1. Ga naar console.firebase.google.com → nieuw project aanmaken
+  2. Build → Realtime Database → Aanmaken → Vergrendelde modus
+  3. Rules-tab → vervang de regels door:
+     { "rules": { "u": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } } } }
+     → Publiceren
+  4. Authentication → Aanmeldmethoden → Anoniem + Google inschakelen
+  5. Projectinstellingen → Je apps → Web-app toevoegen → kopieer het firebaseConfig object
+  6. Klik op "☁ Sync" in het dashboard → plak de JSON config → sla op → meld aan met Google
+-->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -239,6 +253,68 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
   .stat-row { grid-template-columns:1fr; }
   .month-current { min-width:100px; font-size:15px; }
 }
+
+/* ── SYNC STATUS DOT ── */
+.sync-dot { font-size:11px; transition:color .3s; }
+.sync-dot.online  { color: var(--good); }
+.sync-dot.offline { color: var(--border); }
+.sync-dot.pending { color: var(--warn); }
+
+/* ── TOPBAR ACTION BUTTONS ── */
+.topbar-actions { display:flex; align-items:center; gap:8px; }
+.topbar-btn {
+  background:none; border:1px solid var(--border); border-radius:6px;
+  padding:6px 12px; font-size:11px; font-family:'DM Sans',sans-serif;
+  color:var(--text-light); cursor:pointer; letter-spacing:.04em;
+  transition:background .15s, color .15s; white-space:nowrap;
+}
+.topbar-btn:hover { background:var(--sand); color:var(--text-dark); }
+.topbar-btn.sync-active { color:var(--good); border-color:var(--good); }
+
+/* ── SYNC MODAL ── */
+.sync-modal-box {
+  background:var(--white); width:100%; max-width:440px; border-radius:16px;
+  padding:32px 28px 28px; box-shadow:0 20px 60px rgba(44,36,24,.2);
+}
+.sync-modal-box textarea {
+  width:100%; border:1px solid var(--border); border-radius:6px;
+  background:var(--cream); font-size:12px; font-family:monospace;
+  color:var(--text-dark); padding:10px 12px; outline:none; resize:vertical;
+  margin-top:8px; line-height:1.5;
+}
+.sync-modal-box textarea:focus { border-color:var(--text-mid); }
+.sync-status-text { font-size:13px; color:var(--text-mid); margin-bottom:16px; line-height:1.5; }
+.sync-status-text strong { color:var(--text-dark); }
+
+/* ── PRINT / PDF EXPORT ── */
+@media print {
+  .topbar, .fab-wrap, .save-bar, .toast, .modal-overlay,
+  .sync-modal-overlay, .topbar-actions { display:none !important; }
+
+  body { background:white; padding:0; font-size:11pt; color:#2c2418; }
+  .page { padding:0; max-width:none; }
+
+  .top-strip {
+    background:white; border:none; border-bottom:2px solid #ddd5c8;
+    padding:12px 0; margin-bottom:12px; grid-template-columns:1fr auto;
+  }
+  .hero-amount { font-size:44pt; }
+
+  .main-grid { grid-template-columns:1fr 1fr; gap:12px; }
+  .tracker-grid { grid-template-columns:1fr 1fr; gap:12px; }
+  .stat-row { grid-template-columns:1fr 1fr 1fr 1fr; margin-bottom:12px; }
+
+  .card { box-shadow:none; border:1px solid #ddd5c8; break-inside:avoid; }
+  .card-header { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  .del-btn, .tx-del, .debt-del-btn, .debt-add-form,
+  .add-row, .add-btn { display:none !important; }
+
+  @page {
+    margin:1.5cm;
+    size: A4;
+  }
+}
 </style>
 </head>
 <body>
@@ -251,7 +327,12 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="month-current" id="monthLabel"></div>
     <button class="month-btn" onclick="changeMonth(1)">&#8594;</button>
   </div>
-  <button onclick="resetAll()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:11px;font-family:'DM Sans',sans-serif;color:var(--text-light);cursor:pointer;letter-spacing:.04em;" title="Verwijder alle data en begin opnieuw">↺ Reset</button>
+  <div class="topbar-actions">
+    <span id="syncDot" class="sync-dot offline" title="Sync status">●</span>
+    <button id="syncBtn" class="topbar-btn" onclick="openSyncModal()">☁ Sync</button>
+    <button class="topbar-btn" onclick="exportPDF()" title="Exporteer huidige maand als PDF">⬇ PDF</button>
+    <button class="topbar-btn" onclick="resetAll()" title="Verwijder alle data en begin opnieuw">↺ Reset</button>
+  </div>
 </div>
 
 <div class="page">
@@ -395,6 +476,36 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal()">Annuleren</button>
       <button class="btn-primary" onclick="submitTx()">Toevoegen</button>
+    </div>
+  </div>
+</div>
+
+<!-- SYNC MODAL -->
+<div class="modal-overlay sync-modal-overlay" id="syncModalOverlay" onclick="syncOverlayClick(event)">
+  <div class="sync-modal-box">
+    <div class="modal-title">Sync instellen</div>
+
+    <!-- Stap 1: Firebase config plakken -->
+    <div id="syncStepConfig">
+      <p class="sync-status-text">Plak hier het <strong>firebaseConfig</strong> object uit de Firebase-console (als JSON).</p>
+      <label style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-light)">Firebase configuratie</label>
+      <textarea id="fbConfigInput" rows="7" placeholder='{"apiKey":"AIza...","authDomain":"...","databaseURL":"https://...-default-rtdb.firebaseio.com","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeSyncModal()">Annuleren</button>
+        <button class="btn-primary" onclick="saveFBConfig()">Opslaan &amp; verbinden</button>
+      </div>
+    </div>
+
+    <!-- Stap 2: Inloggen / status -->
+    <div id="syncStepAuth" style="display:none">
+      <p class="sync-status-text" id="syncAuthStatus">Meld aan met je Google-account om sync in te schakelen.</p>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeSyncModal()">Sluiten</button>
+        <button class="btn-primary" id="syncAuthBtn" onclick="signInWithGoogle()">Aanmelden met Google</button>
+      </div>
+      <div style="margin-top:14px;text-align:center;">
+        <button style="background:none;border:none;font-size:11px;color:var(--text-light);cursor:pointer;text-decoration:underline;" onclick="resetFBConfig()">Andere Firebase config instellen</button>
+      </div>
     </div>
   </div>
 </div>
@@ -842,6 +953,178 @@ function deleteLoan(i){
 renderAll();
 window.addEventListener('visibilitychange',()=>{if(document.hidden&&dirty)saveData();});
 window.addEventListener('beforeunload',()=>{if(dirty)saveData();});
+
+// ── PDF EXPORT ────────────────────────────────────────────────────────────────
+function exportPDF(){
+  const orig=document.title;
+  document.title=`Budget Dashboard – ${MONTHS[curM]} ${curY}`;
+  window.print();
+  document.title=orig;
+}
+
+// ── SYNC MODULE ───────────────────────────────────────────────────────────────
+(function initSync(){
+  const HARDCODED_CFG={
+    apiKey:"AIzaSyCNk73qayCQPlVLhEdc-lxnbwZ9u1fR-WM",
+    authDomain:"budget-dashboard-4fe0d.firebaseapp.com",
+    databaseURL:"https://budget-dashboard-4fe0d-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:"budget-dashboard-4fe0d",
+    storageBucket:"budget-dashboard-4fe0d.firebasestorage.app",
+    messagingSenderId:"794095927584",
+    appId:"1:794095927584:web:2e1a429a8fd43f13e01745"
+  };
+  const raw=localStorage.getItem('firebase_config');
+  let cfg; try{ cfg=raw?JSON.parse(raw):HARDCODED_CFG; } catch{ cfg=HARDCODED_CFG; }
+  if(!cfg.apiKey||!cfg.databaseURL) return;
+
+  try{ firebase.initializeApp(cfg); } catch(e){ if(!/already exists/.test(e.message)) return; }
+  const auth=firebase.auth();
+  const db=firebase.database();
+  db.setPersistenceEnabled(true);
+
+  let syncUID=null;
+  let detachTx=null;
+
+  // Wrap existing save functions so every save also pushes to Firebase
+  const _origSaveTemplate=saveTemplate;
+  saveTemplate=function(){ _origSaveTemplate(); if(syncUID) db.ref(`u/${syncUID}/t`).set(template).catch(()=>{}); };
+
+  const _origSaveTx=saveTx;
+  saveTx=function(){ _origSaveTx(); if(syncUID) db.ref(`u/${syncUID}/x/${curY}/${curM}`).set(transactions).catch(()=>{}); };
+
+  const _origSaveLoans=saveLoans;
+  saveLoans=function(){ _origSaveLoans(); if(syncUID) db.ref(`u/${syncUID}/l`).set(loans).catch(()=>{}); };
+
+  const _origChangeMonth=changeMonth;
+  changeMonth=function(dir){ _origChangeMonth(dir); if(syncUID) attachTxListener(); };
+
+  function attachTxListener(){
+    if(detachTx){ detachTx(); detachTx=null; }
+    const ref=db.ref(`u/${syncUID}/x/${curY}/${curM}`);
+    ref.on('value',snap=>{
+      const v=snap.val();
+      if(v&&JSON.stringify(v)!==JSON.stringify(transactions)){
+        transactions=v; renderAll();
+      }
+    });
+    detachTx=()=>ref.off('value');
+  }
+
+  auth.onAuthStateChanged(user=>{
+    if(user){
+      syncUID=user.uid;
+      _updateSyncUI(user);
+      // Listen for remote changes
+      db.ref(`u/${syncUID}/t`).on('value',s=>{
+        const v=s.val();
+        if(v&&JSON.stringify(v)!==JSON.stringify(template)){ template=v; state=buildState(); renderAll(); }
+      });
+      db.ref(`u/${syncUID}/l`).on('value',s=>{
+        const v=s.val();
+        if(v&&JSON.stringify(v)!==JSON.stringify(loans)){ loans=v; renderDebtOverview(); }
+      });
+      attachTxListener();
+      // Push local data to Firebase on first connect
+      db.ref(`u/${syncUID}/t`).set(template).catch(()=>{});
+      db.ref(`u/${syncUID}/x/${curY}/${curM}`).set(transactions).catch(()=>{});
+      db.ref(`u/${syncUID}/l`).set(loans).catch(()=>{});
+    } else {
+      syncUID=null;
+      auth.signInAnonymously().catch(()=>{});
+      _updateSyncUI(null);
+    }
+  });
+
+  // Connection state → colour of the sync dot
+  db.ref('.info/connected').on('value',snap=>{
+    const dot=document.getElementById('syncDot');
+    if(!dot) return;
+    if(!syncUID){ dot.className='sync-dot offline'; return; }
+    dot.className='sync-dot '+(snap.val()?'online':'pending');
+  });
+
+  window._firebaseAuth=auth;
+  window._firebaseDB=db;
+})();
+
+function _updateSyncUI(user){
+  const btn=document.getElementById('syncBtn');
+  const dot=document.getElementById('syncDot');
+  if(!btn) return;
+  if(!user||user.isAnonymous){
+    btn.textContent='☁ Sync';
+    btn.className='topbar-btn';
+    btn.onclick=openSyncModal;
+    if(dot) dot.className='sync-dot offline';
+  } else {
+    const name=(user.displayName||user.email||'').split(' ')[0]||'Sync';
+    btn.textContent='☁ '+name;
+    btn.className='topbar-btn sync-active';
+    btn.onclick=openSyncModal;
+  }
+}
+
+function saveFBConfig(){
+  const v=document.getElementById('fbConfigInput').value.trim();
+  let parsed; try{ parsed=JSON.parse(v); } catch{ showToast('Ongeldige JSON – controleer de config'); return; }
+  if(!parsed.apiKey||!parsed.databaseURL){ showToast('Ontbrekende velden: apiKey en/of databaseURL'); return; }
+  localStorage.setItem('firebase_config',v);
+  showToast('Config opgeslagen – pagina wordt herladen...');
+  setTimeout(()=>location.reload(),1400);
+}
+
+function resetFBConfig(){
+  localStorage.removeItem('firebase_config');
+  document.getElementById('syncStepConfig').style.display='';
+  document.getElementById('syncStepAuth').style.display='none';
+}
+
+function signInWithGoogle(){
+  if(!window._firebaseAuth){ showToast('Stel eerst Firebase in'); return; }
+  const provider=new firebase.auth.GoogleAuthProvider();
+  const user=window._firebaseAuth.currentUser;
+  const p=(user&&user.isAnonymous)
+    ?user.linkWithPopup(provider).catch(e=>{
+        if(e.code==='auth/credential-already-in-use') return window._firebaseAuth.signInWithPopup(provider);
+        return Promise.reject(e);
+      })
+    :window._firebaseAuth.signInWithPopup(provider);
+  p.then(()=>{ closeSyncModal(); showToast('Sync ingeschakeld!'); })
+   .catch(e=>showToast('Aanmelden mislukt: '+e.message));
+}
+
+function openSyncModal(){
+  const hasCfg=!!localStorage.getItem('firebase_config');
+  document.getElementById('syncStepConfig').style.display=hasCfg?'none':'';
+  document.getElementById('syncStepAuth').style.display=hasCfg?'':'none';
+  if(hasCfg){
+    const user=window._firebaseAuth?.currentUser;
+    const statusEl=document.getElementById('syncAuthStatus');
+    const authBtn=document.getElementById('syncAuthBtn');
+    if(statusEl){
+      if(user&&!user.isAnonymous){
+        statusEl.innerHTML=`Aangemeld als <strong>${user.displayName||user.email}</strong>. Data wordt automatisch gesynchroniseerd.`;
+        if(authBtn){ authBtn.textContent='Afmelden'; authBtn.onclick=()=>{ window._firebaseAuth.signOut().then(()=>{ closeSyncModal(); showToast('Afgemeld'); }); }; }
+      } else {
+        statusEl.textContent='Meld aan met je Google-account om sync in te schakelen.';
+        if(authBtn){ authBtn.textContent='Aanmelden met Google'; authBtn.onclick=signInWithGoogle; }
+      }
+    }
+  }
+  document.getElementById('syncModalOverlay').classList.add('open');
+}
+function closeSyncModal(){ document.getElementById('syncModalOverlay').classList.remove('open'); }
+function syncOverlayClick(e){ if(e.target===document.getElementById('syncModalOverlay')) closeSyncModal(); }
+
+// Also wipe remote data on full reset
+const _origResetAll=resetAll;
+resetAll=function(){
+  _origResetAll();
+  if(window._firebaseDB&&window._firebaseAuth?.currentUser){
+    const uid=window._firebaseAuth.currentUser.uid;
+    window._firebaseDB.ref(`u/${uid}`).remove().catch(()=>{});
+  }
+};
 </script>
 </body>
 </html>
