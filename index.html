@@ -356,7 +356,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.5</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.6</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -524,7 +524,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
       <p style="font-size:13px;color:var(--text-mid);line-height:1.5;margin-bottom:4px">Upload een <strong>ING bankafschrift</strong> (.csv). Transacties worden automatisch herkend en aan categorieën gekoppeld.</p>
       <div class="csv-drop-zone" id="csvDropZone" onclick="document.getElementById('csvFileInput').click()">
         <div class="csv-drop-icon">📂</div>
-        <div class="csv-drop-text">Klik om een bestand te kiezen</div>
+        <div class="csv-drop-text">Sleep je CSV hier naartoe, of klik om te kiezen</div>
         <div class="csv-drop-sub">ING › Mijn ING › Transacties › Exporteren (.csv)</div>
       </div>
       <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVFile(this.files[0])">
@@ -612,8 +612,13 @@ function defaultTemplate(){
   };
 }
 function loadTemplate(){
-  try{const r=localStorage.getItem(TMPL_KEY);return r?JSON.parse(r):defaultTemplate();}
-  catch{return defaultTemplate();}
+  try{
+    const r=localStorage.getItem(TMPL_KEY);
+    if(!r) return defaultTemplate();
+    const t=JSON.parse(r);
+    const empty=SECTIONS.every(k=>!t[k]||t[k].length===0);
+    return empty?defaultTemplate():t;
+  }catch{return defaultTemplate();}
 }
 function saveTemplate(){ localStorage.setItem(TMPL_KEY,JSON.stringify(template)); }
 
@@ -1356,17 +1361,17 @@ function confirmCSV(){
 }
 
 // Drag & drop op de drop zone
-document.addEventListener('DOMContentLoaded',()=>{
+(function initDropZone(){
   const zone=document.getElementById('csvDropZone');
   if(!zone) return;
   zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
-  zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+  zone.addEventListener('dragleave',e=>{if(!zone.contains(e.relatedTarget))zone.classList.remove('drag-over');});
   zone.addEventListener('drop',e=>{
     e.preventDefault();zone.classList.remove('drag-over');
     const f=e.dataTransfer.files[0];
     if(f) handleCSVFile(f);
   });
-});
+})();
 </script>
 </body>
 </html>
