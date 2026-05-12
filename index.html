@@ -1079,8 +1079,8 @@ function exportPDF(){
   };
 
   try{ firebase.initializeApp(cfg); } catch(e){ if(!/already exists/.test(e.message)) return; }
-  const auth=firebase.auth();
-  const db=firebase.database();
+  let auth, db;
+  try{ auth=firebase.auth(); db=firebase.database(); } catch(e){ console.error('Firebase setup mislukt:',e); return; }
 
   let syncUID=null;
   let detachTx=null;
@@ -1184,9 +1184,12 @@ function saveFBConfig(){
 }
 
 function signInWithGoogle(){
-  if(!window._firebaseAuth){ showToast('Stel eerst Firebase in'); return; }
+  let auth=window._firebaseAuth;
+  if(!auth){
+    if(typeof firebase==='undefined'){ showToast('Firebase SDK niet geladen — controleer internetverbinding'); return; }
+    try{ auth=firebase.auth(); } catch(e){ showToast('Firebase niet beschikbaar: '+e.message); return; }
+  }
   const provider=new firebase.auth.GoogleAuthProvider();
-  const auth=window._firebaseAuth;
   // Try popup; on block fall back to redirect
   auth.signInWithPopup(provider)
     .then(()=>{ closeSyncModal(); showToast('Aangemeld!'); })
