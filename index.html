@@ -295,15 +295,21 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .csv-drop-sub  { font-size:11px; color:var(--text-light); margin-top:4px; }
 .csv-modal { max-width:660px; max-height:88vh; display:flex; flex-direction:column; padding-bottom:0; }
 .csv-modal .modal-title { flex-shrink:0; }
-.csv-summary { font-size:12px; color:var(--text-mid); margin-bottom:10px; flex-shrink:0; }
+.csv-summary { font-size:12px; color:var(--text-mid); margin-bottom:6px; flex-shrink:0; }
+.csv-progress { font-size:11px; color:var(--text-mid); text-align:right; margin-bottom:8px; flex-shrink:0; font-weight:500; }
 .csv-tx-list { overflow-y:auto; flex:1; margin:0 -28px; padding:0 28px; }
-.csv-tx-item { display:grid; grid-template-columns:46px 1fr 76px 150px; gap:8px; align-items:center; padding:7px 0; border-top:1px dashed var(--border); font-size:12px; }
+.csv-tx-item { display:grid; grid-template-columns:46px 1fr 80px 1fr; gap:8px; align-items:start; padding:8px 0; border-top:1px dashed var(--border); font-size:12px; }
 .csv-tx-item:first-child { border-top:none; }
-.csv-tx-date { color:var(--text-light); font-size:11px; }
-.csv-tx-desc { color:var(--text-dark); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.csv-tx-amt  { text-align:right; font-weight:500; white-space:nowrap; }
+.csv-tx-date { color:var(--text-light); font-size:11px; padding-top:2px; }
+.csv-tx-desc { display:flex; flex-direction:column; gap:2px; min-width:0; overflow:hidden; }
+.csv-tx-name { font-weight:500; color:var(--text-dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px; }
+.csv-tx-memo { font-size:10px; color:var(--text-light); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.csv-tx-amt  { text-align:right; font-weight:500; white-space:nowrap; padding-top:2px; }
 .csv-tx-amt.cr { color:var(--good); } .csv-tx-amt.dr { color:var(--bad); }
+.csv-tx-cat { display:flex; flex-direction:column; gap:3px; }
 .csv-tx-cat select { width:100%; border:1px solid var(--border); border-radius:4px; background:var(--white); font-size:11px; font-family:'DM Sans',sans-serif; color:var(--text-dark); padding:4px 5px; outline:none; }
+.csv-all-btn { background:none; border:none; color:var(--text-light); font-size:10px; cursor:pointer; text-align:left; padding:0; font-family:'DM Sans',sans-serif; transition:color .12s; }
+.csv-all-btn:hover { color:var(--text-dark); }
 .csv-modal-actions { flex-shrink:0; display:flex; gap:10px; padding:16px 0 28px; }
 
 /* ── SYNC MODAL ── */
@@ -356,7 +362,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.13</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.14</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -537,6 +543,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     </div>
     <div id="csvStep2" style="display:none;flex-direction:column;flex:1;overflow:hidden">
       <div class="csv-summary" id="csvSummary"></div>
+      <div class="csv-progress" id="csvProgressCount"></div>
       <div class="csv-tx-list" id="csvTxList"></div>
       <div class="csv-modal-actions">
         <button class="btn-secondary" onclick="cancelCSV()">Annuleren</button>
@@ -1233,6 +1240,67 @@ resetAll=function(){
 };
 
 // ── CSV IMPORT ────────────────────────────────────────────────────────────────
+const RULES_KEY = 'bgt_rules';
+function loadRules(){ try{ return JSON.parse(localStorage.getItem(RULES_KEY)||'{}'); }catch{ return {}; } }
+function saveRules(rules){ localStorage.setItem(RULES_KEY, JSON.stringify(rules)); }
+
+function getAutoCategory(r){
+  const rules = loadRules();
+  if(rules[r.name]) return rules[r.name];
+  const kw = autoDetectCSV(r.memo, r.name);
+  if(kw) return kw;
+  if(r.credit && template.income?.length) return 'income|0';
+  return '';
+}
+
+function updateCSVProgress(){
+  const sels = [...document.querySelectorAll('#csvTxList select')];
+  if(!sels.length) return;
+  const done = sels.filter(s => s.value && !s.value.startsWith('__new_')).length;
+  const el = document.getElementById('csvProgressCount');
+  if(el){
+    el.textContent = `${done} / ${sels.length} gecategoriseerd`;
+    el.style.color = done === sels.length ? 'var(--good)' : 'var(--text-mid)';
+  }
+}
+
+function applyToAll(i){
+  const sels = document.querySelectorAll('#csvTxList select');
+  const val  = sels[i].value;
+  const name = _csvRows[i].name;
+  if(!val || val.startsWith('__new_')) return;
+  let n = 0;
+  sels.forEach((s, j) => {
+    if(_csvRows[j].name === name && !s.value){ s.value = val; n++; }
+  });
+  updateCSVProgress();
+  if(n) showToast(`${n} rijen bijgewerkt`);
+  else showToast('Geen andere rijen met dezelfde naam');
+}
+
+function onCsvSelectChange(sel, i){
+  if(sel.value.startsWith('__new_')){
+    const sec = sel.value.replace('__new_', '');
+    const nm  = prompt('Naam nieuwe categorie:');
+    if(!nm?.trim()){ sel.value = ''; return; }
+    const def = defaultTemplate();
+    if(!template[sec]?.length && def[sec]?.length){
+      template[sec] = def[sec].map(r=>({...r}));
+    }
+    template[sec].push({name: nm.trim(), budget: ''});
+    state[sec] = template[sec].map(r => ({name:r.name, budget:r.budget}));
+    saveTemplate();
+    const idx = template[sec].length - 1;
+    sel.value = `${sec}|${idx}`;
+    document.querySelectorAll('#csvTxList select').forEach(s => {
+      const cur = s.value;
+      s.innerHTML = csvCatOptions(cur);
+    });
+    showToast(`"${nm.trim()}" toegevoegd`);
+  }
+  updateCSVProgress();
+}
+
 function autoDetectCSV(desc, name){
   const def = defaultTemplate();
   const hay = (desc + ' ' + name).toLowerCase();
@@ -1296,6 +1364,7 @@ function csvCatOptions(selected){
       const sel=(sec+'|'+i===selected)?' selected':'';
       h+=`<option value="${sec}|${i}"${sel}>${label} – ${esc(rows[i].name)}</option>`;
     }
+    h+=`<option value="__new_${sec}">＋ Nieuwe categorie (${label})…</option>`;
   }
   return h;
 }
@@ -1334,30 +1403,50 @@ function renderCSVPreview(){
     n ? `${n} transacties gevonden — kies per regel de categorie. Transacties worden opgeslagen in de juiste maand.`
       : `Geen transacties gevonden. Controleer of het bestand geldig is.`;
   if(!n){ document.getElementById('csvTxList').innerHTML=''; return; }
+  // Pre-compute name frequencies for "apply to all" button
+  const nameCounts={};
+  _csvRows.forEach(r=>{ nameCounts[r.name]=(nameCounts[r.name]||0)+1; });
   let html='';
   _csvRows.forEach((r,i)=>{
-    const auto=r.credit&&template.income?.length ? 'income|0' : autoDetectCSV(r.memo,r.name);
+    const auto=getAutoCategory(r);
     const sign=r.credit?'+':'-';
     const cls=r.credit?'cr':'dr';
     const dd=String(r.d).padStart(2,'0')+'/'+String(r.m+1).padStart(2,'0');
-    const desc=r.memo||r.name;
+    const applyBtn=nameCounts[r.name]>1
+      ? `<button class="csv-all-btn" onclick="applyToAll(${i})" title="Toepassen op alle '${esc(r.name)}'">↓ allen</button>`
+      : '';
     html+=`<div class="csv-tx-item">
       <div class="csv-tx-date">${dd}</div>
-      <div class="csv-tx-desc" title="${esc(desc)}">${esc(desc)}</div>
+      <div class="csv-tx-desc">
+        <div class="csv-tx-name" title="${esc(r.name)}">${esc(r.name)}</div>
+        <div class="csv-tx-memo" title="${esc(r.memo)}">${esc(r.memo)||'—'}</div>
+      </div>
       <div class="csv-tx-amt ${cls}">${sign}${fmt(r.amt,true)}</div>
-      <div class="csv-tx-cat"><select data-i="${i}">${csvCatOptions(auto)}</select></div>
+      <div class="csv-tx-cat">
+        <select data-i="${i}" onchange="onCsvSelectChange(this,${i})">${csvCatOptions(auto)}</select>
+        ${applyBtn}
+      </div>
     </div>`;
   });
   document.getElementById('csvTxList').innerHTML=html;
+  updateCSVProgress();
 }
 
 function confirmCSV(){
   const selects=document.querySelectorAll('#csvTxList select');
+  // Save learned rules for all confirmed selections
+  const rules=loadRules();
+  selects.forEach(sel=>{
+    if(!sel.value || sel.value.startsWith('__new_')) return;
+    const r=_csvRows[parseInt(sel.dataset.i)];
+    rules[r.name]=sel.value;
+  });
+  saveRules(rules);
   // Ensure template rows exist for any section the user assigned to
   const def=defaultTemplate();
   let tmplChanged=false;
   selects.forEach(sel=>{
-    if(!sel.value) return;
+    if(!sel.value || sel.value.startsWith('__new_')) return;
     const sec=sel.value.split('|')[0];
     if(!template[sec]?.length && def[sec]?.length){
       template[sec]=def[sec].map(r=>({...r}));
@@ -1368,7 +1457,7 @@ function confirmCSV(){
   // Group imports by year+month so we save to the correct month
   const byMonth={};
   selects.forEach(sel=>{
-    if(!sel.value) return;
+    if(!sel.value || sel.value.startsWith('__new_')) return;
     const r=_csvRows[parseInt(sel.dataset.i)];
     const [section,idxStr]=sel.value.split('|');
     const rowIdx=parseInt(idxStr);
