@@ -356,7 +356,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.8</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.9</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -521,7 +521,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
   <div class="modal csv-modal">
     <div class="modal-title">CSV Importeren</div>
     <div id="csvStep1">
-      <p style="font-size:13px;color:var(--text-mid);line-height:1.5;margin-bottom:4px">Upload een <strong>ING bankafschrift</strong> (.csv). Transacties worden automatisch herkend en aan categorieën gekoppeld.</p>
+      <p style="font-size:13px;color:var(--text-mid);line-height:1.5;margin-bottom:12px">Upload een <strong>ING bankafschrift</strong> (.csv). Transacties worden automatisch herkend en aan categorieën gekoppeld.</p>
       <div class="csv-drop-zone" id="csvDropZone"
            ondragenter="event.preventDefault();this.classList.add('drag-over')"
            ondragover="event.preventDefault();this.classList.add('drag-over')"
@@ -529,13 +529,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
            ondrop="event.preventDefault();this.classList.remove('drag-over');handleCSVFile(event.dataTransfer.files[0])">
         <div class="csv-drop-icon">📂</div>
         <div class="csv-drop-text">Sleep je CSV-bestand hierheen</div>
-        <div class="csv-drop-sub">of gebruik de knop hieronder</div>
+        <div class="csv-drop-sub">ING › Mijn ING › Transacties › Exporteren</div>
       </div>
-      <label style="display:block;margin-bottom:10px">
-        <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVFile(this.files[0])">
-        <span class="btn-primary" style="display:block;text-align:center;cursor:pointer;border-radius:6px;padding:14px;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:500;background:var(--text-dark);color:var(--white)"
-              onclick="document.getElementById('csvFileInput').click()">Bestand kiezen</span>
-      </label>
+      <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVFile(this.files[0])">
+      <button class="btn-primary" style="width:100%;margin-bottom:10px" onclick="document.getElementById('csvFileInput').click()">Bestand kiezen</button>
       <button class="btn-secondary" style="width:100%" onclick="closeCSVModal()">Sluiten</button>
     </div>
     <div id="csvStep2" style="display:none;flex-direction:column;flex:1;overflow:hidden">
@@ -1312,13 +1309,18 @@ function cancelCSV(){ closeCSVModal(); }
 function csvOverlayClick(e){ if(e.target===document.getElementById('csvModalOverlay')) closeCSVModal(); }
 
 function handleCSVFile(file){
-  if(!file) return;
+  if(!file){ showToast('Geen bestand ontvangen'); return; }
   const reader=new FileReader();
+  reader.onerror=()=>showToast('Fout bij lezen van bestand');
   reader.onload=e=>{
-    _csvRows=parseINGCSV(e.target.result);
-    renderCSVPreview();
+    try{
+      _csvRows=parseINGCSV(e.target.result);
+      renderCSVPreview();
+    }catch(err){
+      showToast('Verwerkingsfout: '+err.message);
+    }
   };
-  reader.readAsText(file,'windows-1252');
+  reader.readAsText(file,'utf-8');
 }
 
 function renderCSVPreview(){
