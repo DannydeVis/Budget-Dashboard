@@ -362,7 +362,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.17</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.18</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -603,6 +603,7 @@ const _FB_CFG={
   messagingSenderId:"794095927584",
   appId:"1:794095927584:web:2e1a429a8fd43f13e01745"
 };
+const RULES_KEY = 'bgt_rules';
 const MONTHS   = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
 const COLORS   = ['#c8d8e4','#e8c4b0','#c8d4c0','#e4b4b4','#d4c8e0','#e0d4b4'];
 const SECTIONS = ['income','bills','expenses','savings','debt'];
@@ -1247,7 +1248,6 @@ resetAll=function(){
 };
 
 // ── CSV IMPORT ────────────────────────────────────────────────────────────────
-const RULES_KEY = 'bgt_rules';
 function loadRules(){ try{ return JSON.parse(localStorage.getItem(RULES_KEY)||'{}'); }catch{ return {}; } }
 function saveRules(rules){ localStorage.setItem(RULES_KEY, JSON.stringify(rules)); }
 
@@ -1479,7 +1479,7 @@ function confirmCSV(){
       if(!tx[section]) tx[section]=[];
       while(tx[section].length<=rowIdx) tx[section].push([]);
       tx[section][rowIdx].push({
-        date:String(r.d).padStart(2,'0')+'/'+String(r.m+1).padStart(2,'0'),
+        day:r.d,
         amount:r.amt,
         desc:r.memo||r.name
       });
