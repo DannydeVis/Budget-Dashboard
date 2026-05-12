@@ -980,7 +980,6 @@ function exportPDF(){
   try{ firebase.initializeApp(cfg); } catch(e){ if(!/already exists/.test(e.message)) return; }
   const auth=firebase.auth();
   const db=firebase.database();
-  db.setPersistenceEnabled(true);
 
   let syncUID=null;
   let detachTx=null;
