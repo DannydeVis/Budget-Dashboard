@@ -356,7 +356,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.11</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.12</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -592,18 +592,18 @@ const COLORS   = ['#c8d8e4','#e8c4b0','#c8d4c0','#e4b4b4','#d4c8e0','#e0d4b4'];
 const SECTIONS = ['income','bills','expenses','savings','debt'];
 const TMPL_KEY = 'budget_template';
 const CSV_KEYWORDS = [
-  ['income',   'Salaris',          ['salaris','loon ','werkgever','uitbetaling loon','netto loon','salarisbetaling']],
-  ['bills',    'Huur / Hypotheek', ['hypotheek','aegon hypothe','obvion','florius','iq wonen','nationale-nederlanden hypothe','huur ','vestia','ymere','woningstichting','haag wonen']],
-  ['bills',    'Energie',          ['vattenfall','eneco','nuon ','essent','greenchoice','frank energie','budget energie','energiedirect','vandebron','zonneplan','oxxio','innova energie','powerpeers']],
-  ['bills',    'Internet & TV',    ['ziggo','kpn ','t-mobile','odido','tele2','youfone','simpel','hollandsnieuwe','xs4all']],
-  ['bills',    'Zorgverzekering',  ['menzis','zorgverzekering','achmea','cz ','vgz ','zilveren kruis','interpolis','dsw ','unive ','a.s.r.']],
-  ['bills',    'Abonnementen',     ['spotify','netflix','disney','youtube premium','amazon prime','apple.com/bill','deezer','videoland','npo start']],
-  ['expenses', 'Boodschappen',     ['albert heijn','ah ','jumbo','lidl','aldi','dirk','spar ','coop ','picnic','boni ','plus supermarkt','vomar','deen ','ekoplaza','marqt','poelier','boons markt','slager','bakkerij']],
-  ['expenses', 'Vervoer',          ['ns ','ov-chipkaart','connexxion','arriva ','qpark','q-park','p+r ','shell ','bp ','esso ','total ','texaco','tango ','parkeer','uber ','bolt ','greenwheels','fbto','autoverzekering','rdw ']],
-  ['expenses', 'Uit eten',         ['restaurant','cafe rest','eetcafe','cafetaria','thuisbezorgd','deliveroo','uber eats','mcdonalds','burger king','dominos','new york pizza','starbucks','subway ','kfc ','pizza','gelateria','gelataria','theetuin','haak&hoek']],
-  ['expenses', 'Kleding',          ['zara ','h&m ','primark','nike ','adidas ','we fashion','only ','jack & jones','wehkamp','zalando','zeeman','womens best','shein','klarna bank']],
-  ['expenses', 'Overig',           ['belastingdienst','regionale belasting','gemeentebelasting','waterschapsbelasting','wijzer in opvang','kinderopvang']],
-  ['savings',  'Spaarrekening',    ['oranje spaarrekening','spaarrekening','spaar ']],
+  ['income',   'Salaris',          ['salaris','loon ','werkgever','uitbetaling loon','netto loon','salarisbetaling','nettoloon','vakantiegeld','dertiende maand','eindejaarsuitk']],
+  ['bills',    'Huur / Hypotheek', ['hypotheek','aegon hypothe','obvion','florius','iq wonen','nationale-nederlanden hypothe','huur ','vestia','ymere','woningstichting','haag wonen','mooiland','portaal ','woonbedrijf','rochdale','alliantie ','staedion','woonstad','bo-ex','wonen limburg']],
+  ['bills',    'Energie',          ['vattenfall','eneco','nuon ','essent','greenchoice','frank energie','budget energie','energiedirect','vandebron','zonneplan','oxxio','innova energie','powerpeers','energie direct','next energie','anwb energie','delta energie','sepa energie','tibber','coolblue energie']],
+  ['bills',    'Internet & TV',    ['ziggo','kpn ','t-mobile','odido','tele2','youfone','simpel','hollandsnieuwe','xs4all','vodafone','freedom internet','solcon','caiway','budget thuis']],
+  ['bills',    'Zorgverzekering',  ['menzis','zorgverzekering','achmea','cz ','vgz ','zilveren kruis','interpolis','dsw ','unive ','a.s.r.','asr zorg','nationale nederlanden zorg','anderzorg','prolife','ohra ']],
+  ['bills',    'Abonnementen',     ['spotify','netflix','disney','youtube premium','amazon prime','apple.com/bill','deezer','videoland','npo start','microsoft 365','office 365','adobe ','canva ','patreon','openai','chatgpt','github','google one','icloud','dropbox','exact online','amazon web','aws ']],
+  ['expenses', 'Boodschappen',     ['albert heijn','ah ','jumbo','lidl','aldi','dirk','spar ','coop ','picnic','boni ','plus supermarkt','vomar','deen ','ekoplaza','marqt','poelier','boons markt','slager','bakkerij','hoogvliet','nettorama','dekamarkt','jan linders','emte ','groentewinkel','versmarkt','biologisch','traiteur']],
+  ['expenses', 'Vervoer',          ['ns ','ov-chipkaart','connexxion','arriva ','qpark','q-park','p+r ','shell ','bp ','esso ','total ','texaco','tango ','parkeer','uber ','bolt ','greenwheels','fbto','autoverzekering','rdw ','anwb ','leaseplan','athlon ','alphabet ','arval ','brandstof','tankstation','euro parking','p1 parking','apcoa']],
+  ['expenses', 'Uit eten',         ['restaurant','cafe rest','eetcafe','cafetaria','thuisbezorgd','deliveroo','uber eats','mcdonalds','burger king','dominos','new york pizza','starbucks','subway ','kfc ','pizza','gelateria','gelataria','theetuin','haak&hoek','wok to walk','febo ','snackbar','coffee company','la place','wagamama','vapiano','subway','lunch','eetbar','brasserie','grand cafe']],
+  ['expenses', 'Kleding',          ['zara ','h&m ','primark','nike ','adidas ','we fashion','only ','jack & jones','wehkamp','zalando','zeeman','womens best','shein','klarna bank','vinted','mangopay','aboutyou','c&a ','uniqlo','scotch & soda','tommy hilfiger','levi','asos ','vero moda','name it ','coolcat','noppies','baby-dump','jd sports','foot locker']],
+  ['expenses', 'Overig',           ['belastingdienst','regionale belasting','gemeentebelasting','waterschapsbelasting','wijzer in opvang','kinderopvang','tikkie','media markt','mediamarkt','saturn holding','coolblue','bol.com','amazon.nl','action ','hema ','kruidvat','etos ','da drugstor','blokker','xenos','kijkshop','ikea ','hornbach','gamma ','karwei','praxis ','hubo ','fixami','douglas ','ici paris','rituals','online payments foundation']],
+  ['savings',  'Spaarrekening',    ['oranje spaarrekening','spaarrekening','spaar ','nationale spaar','asr spaar','rabobank spaar','ing spaar']],
 ];
 
 let now=new Date(), curM=now.getMonth(), curY=now.getFullYear(), dirty=false, _csvRows=[];
