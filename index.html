@@ -356,7 +356,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.6</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.7</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -1307,8 +1307,7 @@ function handleCSVFile(file){
   if(!file) return;
   const reader=new FileReader();
   reader.onload=e=>{
-    const all=parseINGCSV(e.target.result);
-    _csvRows=all.filter(r=>r.y===curY&&r.m===curM);
+    _csvRows=parseINGCSV(e.target.result);
     renderCSVPreview();
   };
   reader.readAsText(file,'windows-1252');
@@ -1319,8 +1318,8 @@ function renderCSVPreview(){
   document.getElementById('csvStep2').style.display='flex';
   const n=_csvRows.length;
   document.getElementById('csvSummary').textContent=
-    n ? `${n} transacties gevonden voor ${MONTHS[curM]} ${curY} — selecteer de juiste categorie per transactie.`
-      : `Geen transacties gevonden voor ${MONTHS[curM]} ${curY}. Controleer of het bestand de juiste maand bevat.`;
+    n ? `${n} transacties gevonden — kies per regel de categorie. Transacties worden opgeslagen in de juiste maand.`
+      : `Geen transacties gevonden. Controleer of het bestand geldig is.`;
   if(!n){ document.getElementById('csvTxList').innerHTML=''; return; }
   let html='';
   _csvRows.forEach((r,i)=>{
@@ -1341,35 +1340,64 @@ function renderCSVPreview(){
 
 function confirmCSV(){
   const selects=document.querySelectorAll('#csvTxList select');
-  let count=0;
+  // Group imports by year+month so we save to the correct month
+  const byMonth={};
   selects.forEach(sel=>{
     if(!sel.value) return;
     const r=_csvRows[parseInt(sel.dataset.i)];
     const [section,idxStr]=sel.value.split('|');
     const rowIdx=parseInt(idxStr);
-    if(!transactions[section]) transactions[section]=[];
-    while(transactions[section].length<=rowIdx) transactions[section].push([]);
-    transactions[section][rowIdx].push({
-      date:String(r.d).padStart(2,'0')+'/'+String(r.m+1).padStart(2,'0'),
-      amount:r.amt,
-      desc:r.memo||r.name
-    });
-    count++;
+    const key=r.y+'_'+r.m;
+    if(!byMonth[key]) byMonth[key]={y:r.y,m:r.m,entries:[]};
+    byMonth[key].entries.push({section,rowIdx,r});
   });
-  if(count){ saveTx(); renderAll(); showToast(`${count} transacties geïmporteerd`); }
+  let count=0;
+  for(const {y,m,entries} of Object.values(byMonth)){
+    const tx=loadTx(y,m);
+    for(const {section,rowIdx,r} of entries){
+      if(!tx[section]) tx[section]=[];
+      while(tx[section].length<=rowIdx) tx[section].push([]);
+      tx[section][rowIdx].push({
+        date:String(r.d).padStart(2,'0')+'/'+String(r.m+1).padStart(2,'0'),
+        amount:r.amt,
+        desc:r.memo||r.name
+      });
+      count++;
+    }
+    localStorage.setItem(txKey(y,m),JSON.stringify(tx));
+    // If syncing, push to Firebase too
+    if(window._firebaseDB&&window._firebaseAuth?.currentUser){
+      const uid=window._firebaseAuth.currentUser.uid;
+      window._firebaseDB.ref(`u/${uid}/x/${y}/${m}`).set(tx).catch(()=>{});
+    }
+  }
+  // Reload current month
+  transactions=loadTx(curY,curM);
+  if(count){ renderAll(); showToast(`${count} transacties geïmporteerd`); }
   closeCSVModal();
 }
 
-// Drag & drop op de drop zone
+// Drag & drop — zone én pagina-breed zodat je overal kunt droppen als de modal open is
 (function initDropZone(){
   const zone=document.getElementById('csvDropZone');
   if(!zone) return;
-  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+  zone.addEventListener('dragenter',e=>{e.preventDefault();zone.classList.add('drag-over');});
+  zone.addEventListener('dragover', e=>{e.preventDefault();zone.classList.add('drag-over');});
   zone.addEventListener('dragleave',e=>{if(!zone.contains(e.relatedTarget))zone.classList.remove('drag-over');});
   zone.addEventListener('drop',e=>{
     e.preventDefault();zone.classList.remove('drag-over');
     const f=e.dataTransfer.files[0];
     if(f) handleCSVFile(f);
+  });
+  // Prevent browser from opening file when dropped outside zone
+  document.addEventListener('dragover',e=>e.preventDefault());
+  document.addEventListener('drop',e=>{
+    e.preventDefault();
+    const overlay=document.getElementById('csvModalOverlay');
+    if(overlay&&overlay.classList.contains('open')){
+      const f=e.dataTransfer.files[0];
+      if(f) handleCSVFile(f);
+    }
   });
 })();
 </script>
