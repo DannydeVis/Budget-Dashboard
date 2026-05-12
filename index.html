@@ -356,7 +356,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.12</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.13</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -1234,11 +1234,14 @@ resetAll=function(){
 
 // ── CSV IMPORT ────────────────────────────────────────────────────────────────
 function autoDetectCSV(desc, name){
+  const def = defaultTemplate();
   const hay = (desc + ' ' + name).toLowerCase();
   for(const [section, rowName, keys] of CSV_KEYWORDS){
     if(keys.some(k => hay.includes(k))){
-      const idx = (template[section]||[]).findIndex(r => r.name === rowName);
-      if(idx >= 0) return section+'|'+idx;
+      const rows = template[section]?.length ? template[section] : (def[section] || []);
+      if(!rows.length) continue;
+      const idx = rows.findIndex(r => r.name === rowName);
+      return section + '|' + (idx >= 0 ? idx : 0);
     }
   }
   return '';
@@ -1284,12 +1287,14 @@ function parseINGCSV(text){
 }
 
 function csvCatOptions(selected){
+  const def = defaultTemplate();
   const labels={income:'Inkomen',bills:'Vaste lasten',expenses:'Uitgaven',savings:'Sparen',debt:'Schulden'};
   let h='<option value="">— Overslaan —</option>';
   for(const [sec,label] of Object.entries(labels)){
-    for(let i=0;i<(template[sec]||[]).length;i++){
+    const rows = template[sec]?.length ? template[sec] : (def[sec] || []);
+    for(let i=0;i<rows.length;i++){
       const sel=(sec+'|'+i===selected)?' selected':'';
-      h+=`<option value="${sec}|${i}"${sel}>${label} – ${esc(template[sec][i].name)}</option>`;
+      h+=`<option value="${sec}|${i}"${sel}>${label} – ${esc(rows[i].name)}</option>`;
     }
   }
   return h;
@@ -1348,6 +1353,18 @@ function renderCSVPreview(){
 
 function confirmCSV(){
   const selects=document.querySelectorAll('#csvTxList select');
+  // Ensure template rows exist for any section the user assigned to
+  const def=defaultTemplate();
+  let tmplChanged=false;
+  selects.forEach(sel=>{
+    if(!sel.value) return;
+    const sec=sel.value.split('|')[0];
+    if(!template[sec]?.length && def[sec]?.length){
+      template[sec]=def[sec].map(r=>({...r}));
+      tmplChanged=true;
+    }
+  });
+  if(tmplChanged){ state=buildState(); saveTemplate(); }
   // Group imports by year+month so we save to the correct month
   const byMonth={};
   selects.forEach(sel=>{
