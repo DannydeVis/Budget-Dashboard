@@ -362,7 +362,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.16</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.17</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -594,6 +594,15 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 <div class="toast" id="toast"></div>
 
 <script>
+const _FB_CFG={
+  apiKey:"AIzaSyCNk73qayCQPlVLhEdc-lxnbwZ9u1fR-WM",
+  authDomain:"budget-dashboard-4fe0d.firebaseapp.com",
+  databaseURL:"https://budget-dashboard-4fe0d-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"budget-dashboard-4fe0d",
+  storageBucket:"budget-dashboard-4fe0d.firebasestorage.app",
+  messagingSenderId:"794095927584",
+  appId:"1:794095927584:web:2e1a429a8fd43f13e01745"
+};
 const MONTHS   = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
 const COLORS   = ['#c8d8e4','#e8c4b0','#c8d4c0','#e4b4b4','#d4c8e0','#e0d4b4'];
 const SECTIONS = ['income','bills','expenses','savings','debt'];
@@ -1067,19 +1076,10 @@ function exportPDF(){
 }
 
 // ── SYNC MODULE ───────────────────────────────────────────────────────────────
-const _FB_CFG={
-  apiKey:"AIzaSyCNk73qayCQPlVLhEdc-lxnbwZ9u1fR-WM",
-  authDomain:"budget-dashboard-4fe0d.firebaseapp.com",
-  databaseURL:"https://budget-dashboard-4fe0d-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:"budget-dashboard-4fe0d",
-  storageBucket:"budget-dashboard-4fe0d.firebasestorage.app",
-  messagingSenderId:"794095927584",
-  appId:"1:794095927584:web:2e1a429a8fd43f13e01745"
-};
 (function initSync(){
-  if(!firebase.apps.length){
-    try{ firebase.initializeApp(_FB_CFG); } catch(e){ console.error('Firebase init mislukt:',e); return; }
-  }
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(_FB_CFG);
+  } catch(e){ console.error('Firebase init mislukt:',e); return; }
   let auth, db;
   try{ auth=firebase.auth(); db=firebase.database(); } catch(e){ console.error('Firebase setup mislukt:',e); return; }
 
