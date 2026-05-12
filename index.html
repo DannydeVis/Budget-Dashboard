@@ -356,7 +356,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.7</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.8</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -522,12 +522,20 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="modal-title">CSV Importeren</div>
     <div id="csvStep1">
       <p style="font-size:13px;color:var(--text-mid);line-height:1.5;margin-bottom:4px">Upload een <strong>ING bankafschrift</strong> (.csv). Transacties worden automatisch herkend en aan categorieën gekoppeld.</p>
-      <div class="csv-drop-zone" id="csvDropZone" onclick="document.getElementById('csvFileInput').click()">
+      <div class="csv-drop-zone" id="csvDropZone"
+           ondragenter="event.preventDefault();this.classList.add('drag-over')"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="event.preventDefault();this.classList.remove('drag-over');handleCSVFile(event.dataTransfer.files[0])">
         <div class="csv-drop-icon">📂</div>
-        <div class="csv-drop-text">Sleep je CSV hier naartoe, of klik om te kiezen</div>
-        <div class="csv-drop-sub">ING › Mijn ING › Transacties › Exporteren (.csv)</div>
+        <div class="csv-drop-text">Sleep je CSV-bestand hierheen</div>
+        <div class="csv-drop-sub">of gebruik de knop hieronder</div>
       </div>
-      <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVFile(this.files[0])">
+      <label style="display:block;margin-bottom:10px">
+        <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVFile(this.files[0])">
+        <span class="btn-primary" style="display:block;text-align:center;cursor:pointer;border-radius:6px;padding:14px;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:500;background:var(--text-dark);color:var(--white)"
+              onclick="document.getElementById('csvFileInput').click()">Bestand kiezen</span>
+      </label>
       <button class="btn-secondary" style="width:100%" onclick="closeCSVModal()">Sluiten</button>
     </div>
     <div id="csvStep2" style="display:none;flex-direction:column;flex:1;overflow:hidden">
@@ -1377,29 +1385,9 @@ function confirmCSV(){
   closeCSVModal();
 }
 
-// Drag & drop — zone én pagina-breed zodat je overal kunt droppen als de modal open is
-(function initDropZone(){
-  const zone=document.getElementById('csvDropZone');
-  if(!zone) return;
-  zone.addEventListener('dragenter',e=>{e.preventDefault();zone.classList.add('drag-over');});
-  zone.addEventListener('dragover', e=>{e.preventDefault();zone.classList.add('drag-over');});
-  zone.addEventListener('dragleave',e=>{if(!zone.contains(e.relatedTarget))zone.classList.remove('drag-over');});
-  zone.addEventListener('drop',e=>{
-    e.preventDefault();zone.classList.remove('drag-over');
-    const f=e.dataTransfer.files[0];
-    if(f) handleCSVFile(f);
-  });
-  // Prevent browser from opening file when dropped outside zone
-  document.addEventListener('dragover',e=>e.preventDefault());
-  document.addEventListener('drop',e=>{
-    e.preventDefault();
-    const overlay=document.getElementById('csvModalOverlay');
-    if(overlay&&overlay.classList.contains('open')){
-      const f=e.dataTransfer.files[0];
-      if(f) handleCSVFile(f);
-    }
-  });
-})();
+// Prevent browser from opening dropped files when modal is closed
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>e.preventDefault());
 </script>
 </body>
 </html>
