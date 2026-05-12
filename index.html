@@ -287,6 +287,25 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .topbar-btn:hover { background:var(--sand); color:var(--text-dark); }
 .topbar-btn.sync-active { color:var(--good); border-color:var(--good); }
 
+/* ── CSV IMPORT ── */
+.csv-drop-zone { border:2px dashed var(--border); border-radius:10px; padding:30px 20px; text-align:center; cursor:pointer; background:var(--cream); transition:border-color .15s,background .15s; margin:12px 0 20px; }
+.csv-drop-zone:hover,.csv-drop-zone.drag-over { border-color:var(--text-mid); background:var(--sand); }
+.csv-drop-icon { font-size:26px; margin-bottom:8px; }
+.csv-drop-text { font-size:13px; color:var(--text-mid); }
+.csv-drop-sub  { font-size:11px; color:var(--text-light); margin-top:4px; }
+.csv-modal { max-width:660px; max-height:88vh; display:flex; flex-direction:column; padding-bottom:0; }
+.csv-modal .modal-title { flex-shrink:0; }
+.csv-summary { font-size:12px; color:var(--text-mid); margin-bottom:10px; flex-shrink:0; }
+.csv-tx-list { overflow-y:auto; flex:1; margin:0 -28px; padding:0 28px; }
+.csv-tx-item { display:grid; grid-template-columns:46px 1fr 76px 150px; gap:8px; align-items:center; padding:7px 0; border-top:1px dashed var(--border); font-size:12px; }
+.csv-tx-item:first-child { border-top:none; }
+.csv-tx-date { color:var(--text-light); font-size:11px; }
+.csv-tx-desc { color:var(--text-dark); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.csv-tx-amt  { text-align:right; font-weight:500; white-space:nowrap; }
+.csv-tx-amt.cr { color:var(--good); } .csv-tx-amt.dr { color:var(--bad); }
+.csv-tx-cat select { width:100%; border:1px solid var(--border); border-radius:4px; background:var(--white); font-size:11px; font-family:'DM Sans',sans-serif; color:var(--text-dark); padding:4px 5px; outline:none; }
+.csv-modal-actions { flex-shrink:0; display:flex; gap:10px; padding:16px 0 28px; }
+
 /* ── SYNC MODAL ── */
 .sync-modal-box {
   background:var(--white); width:100%; max-width:440px; border-radius:16px;
@@ -346,6 +365,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
   <div class="topbar-actions">
     <span id="syncDot" class="sync-dot offline" title="Sync status">&#9679;</span>
     <button id="syncBtn" class="topbar-btn" onclick="openSyncModal()">&#9729;<span class="btn-label"> Sync</span></button>
+    <button class="topbar-btn" onclick="openCSVModal()" title="Importeer ING bankafschrift CSV">&#8659;<span class="btn-label"> CSV</span></button>
     <button class="topbar-btn" onclick="exportPDF()" title="Exporteer huidige maand als PDF">&#11015;<span class="btn-label"> PDF</span></button>
     <button class="topbar-btn" onclick="resetAll()" title="Verwijder alle data en begin opnieuw">&#8634;<span class="btn-label"> Reset</span></button>
   </div>
@@ -496,6 +516,31 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
   </div>
 </div>
 
+<!-- CSV IMPORT MODAL -->
+<div class="modal-overlay" id="csvModalOverlay" onclick="csvOverlayClick(event)">
+  <div class="modal csv-modal">
+    <div class="modal-title">CSV Importeren</div>
+    <div id="csvStep1">
+      <p style="font-size:13px;color:var(--text-mid);line-height:1.5;margin-bottom:4px">Upload een <strong>ING bankafschrift</strong> (.csv). Transacties worden automatisch herkend en aan categorieën gekoppeld.</p>
+      <div class="csv-drop-zone" id="csvDropZone" onclick="document.getElementById('csvFileInput').click()">
+        <div class="csv-drop-icon">📂</div>
+        <div class="csv-drop-text">Klik om een bestand te kiezen</div>
+        <div class="csv-drop-sub">ING › Mijn ING › Transacties › Exporteren (.csv)</div>
+      </div>
+      <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVFile(this.files[0])">
+      <button class="btn-secondary" style="width:100%" onclick="closeCSVModal()">Sluiten</button>
+    </div>
+    <div id="csvStep2" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div class="csv-summary" id="csvSummary"></div>
+      <div class="csv-tx-list" id="csvTxList"></div>
+      <div class="csv-modal-actions">
+        <button class="btn-secondary" onclick="cancelCSV()">Annuleren</button>
+        <button class="btn-primary" onclick="confirmCSV()" id="csvConfirmBtn">Importeer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- SYNC MODAL -->
 <div class="modal-overlay sync-modal-overlay" id="syncModalOverlay" onclick="syncOverlayClick(event)">
   <div class="sync-modal-box">
@@ -546,10 +591,22 @@ let now=new Date(), curM=now.getMonth(), curY=now.getFullYear(), dirty=false;
 
 function defaultTemplate(){
   return {
-    income:   [],
-    bills:    [],
-    expenses: [],
-    savings:  [],
+    income:   [{name:'Salaris',budget:''}],
+    bills:    [
+      {name:'Huur / Hypotheek',budget:''},
+      {name:'Energie',budget:''},
+      {name:'Internet & TV',budget:''},
+      {name:'Zorgverzekering',budget:''},
+      {name:'Abonnementen',budget:''},
+    ],
+    expenses: [
+      {name:'Boodschappen',budget:''},
+      {name:'Vervoer',budget:''},
+      {name:'Uit eten',budget:''},
+      {name:'Kleding',budget:''},
+      {name:'Overig',budget:''},
+    ],
+    savings:  [{name:'Spaarrekening',budget:''}],
     debt:     []
   };
 }
@@ -1149,6 +1206,161 @@ resetAll=function(){
     window._firebaseDB.ref(`u/${uid}`).remove().catch(()=>{});
   }
 };
+
+// ── CSV IMPORT ────────────────────────────────────────────────────────────────
+const CSV_KEYWORDS = [
+  ['income',   'Salaris',          ['salaris','loon ','werkgever','uitbetaling loon','netto loon']],
+  ['bills',    'Huur / Hypotheek', ['huur','hypotheek','woningcorp','vestia','ymere','woningstichting']],
+  ['bills',    'Energie',          ['vattenfall','eneco','nuon ','essent','greenchoice','frank energie','budget energie','energiedirect','vandebron']],
+  ['bills',    'Internet & TV',    ['ziggo','kpn ','t-mobile','odido','tele2','youfone','simpel','hollandsnieuwe']],
+  ['bills',    'Zorgverzekering',  ['zorgverzekering','achmea','cz ','vgz ','menzis','zilveren kruis','interpolis','dsw ','unive']],
+  ['bills',    'Abonnementen',     ['spotify','netflix','disney','youtube premium','amazon prime','apple.com/bill','deezer']],
+  ['expenses', 'Boodschappen',     ['albert heijn','ah ','jumbo','lidl ','aldi ','dirk','spar ','coop ','picnic','boni ','plus supermarkt','vomar','deen ','ekoplaza','marqt']],
+  ['expenses', 'Vervoer',          ['ns ','ov-chipkaart','connexxion','arriva ','qpark','q-park','p+r ','shell ','bp ','esso ','total ','texaco','tango ','parkeer','uber ','bolt ','greenwheels']],
+  ['expenses', 'Uit eten',         ['restaurant','thuisbezorgd','deliveroo','uber eats','mcdonalds','burger king','dominos','new york pizza','starbucks','eetcafe','cafetaria','subway ','kfc ']],
+  ['expenses', 'Kleding',          ['zara ','h&m ','primark','nike ','adidas ','we fashion','only ','jack & jones','wehkamp','zalando']],
+  ['savings',  'Spaarrekening',    ['spaarrekening','spaar ','overboeking naar spaar']],
+];
+
+function autoDetectCSV(desc, name){
+  const hay = (desc + ' ' + name).toLowerCase();
+  for(const [section, rowName, keys] of CSV_KEYWORDS){
+    if(keys.some(k => hay.includes(k))){
+      const idx = (template[section]||[]).findIndex(r => r.name === rowName);
+      if(idx >= 0) return section+'|'+idx;
+    }
+  }
+  return '';
+}
+
+function parseCSVLine(line){
+  const res=[]; let cur='', inQ=false;
+  for(let i=0;i<line.length;i++){
+    if(line[i]==='"'){inQ=!inQ;}
+    else if(line[i]===','&&!inQ){res.push(cur);cur='';}
+    else{cur+=line[i];}
+  }
+  res.push(cur);
+  return res;
+}
+
+function parseINGCSV(text){
+  const lines=text.split('\n').filter(l=>l.trim());
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const c=parseCSVLine(lines[i]);
+    if(c.length<7) continue;
+    const dateRaw=c[0].replace(/"/g,'').trim();
+    const name   =c[1].replace(/"/g,'').trim();
+    const afbij  =c[5].replace(/"/g,'').trim();
+    const amtRaw =c[6].replace(/"/g,'').trim().replace(',','.');
+    const memo   =(c[8]||'').replace(/"/g,'').trim();
+    if(!dateRaw||!amtRaw) continue;
+    const amt=parseFloat(amtRaw);
+    if(isNaN(amt)||amt<=0) continue;
+    // YYYYMMDD
+    const y=parseInt(dateRaw.substring(0,4));
+    const m=parseInt(dateRaw.substring(4,6))-1;
+    const d=parseInt(dateRaw.substring(6,8));
+    if(isNaN(y)||isNaN(m)||isNaN(d)) continue;
+    rows.push({y,m,d,name,memo,amt,credit:afbij==='Bij'});
+  }
+  return rows;
+}
+
+function csvCatOptions(selected){
+  const labels={income:'Inkomen',bills:'Vaste lasten',expenses:'Uitgaven',savings:'Sparen',debt:'Schulden'};
+  let h='<option value="">— Overslaan —</option>';
+  for(const [sec,label] of Object.entries(labels)){
+    for(let i=0;i<(template[sec]||[]).length;i++){
+      const sel=(sec+'|'+i===selected)?' selected':'';
+      h+=`<option value="${sec}|${i}"${sel}>${label} – ${esc(template[sec][i].name)}</option>`;
+    }
+  }
+  return h;
+}
+
+let _csvRows=[];
+
+function openCSVModal(){
+  document.getElementById('csvStep1').style.display='';
+  document.getElementById('csvStep2').style.display='none';
+  document.getElementById('csvFileInput').value='';
+  document.getElementById('csvModalOverlay').classList.add('open');
+}
+function closeCSVModal(){ document.getElementById('csvModalOverlay').classList.remove('open'); }
+function cancelCSV(){ closeCSVModal(); }
+function csvOverlayClick(e){ if(e.target===document.getElementById('csvModalOverlay')) closeCSVModal(); }
+
+function handleCSVFile(file){
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const all=parseINGCSV(e.target.result);
+    _csvRows=all.filter(r=>r.y===curY&&r.m===curM);
+    renderCSVPreview();
+  };
+  reader.readAsText(file,'windows-1252');
+}
+
+function renderCSVPreview(){
+  document.getElementById('csvStep1').style.display='none';
+  document.getElementById('csvStep2').style.display='flex';
+  const n=_csvRows.length;
+  document.getElementById('csvSummary').textContent=
+    n ? `${n} transacties gevonden voor ${MONTHS[curM]} ${curY} — selecteer de juiste categorie per transactie.`
+      : `Geen transacties gevonden voor ${MONTHS[curM]} ${curY}. Controleer of het bestand de juiste maand bevat.`;
+  if(!n){ document.getElementById('csvTxList').innerHTML=''; return; }
+  let html='';
+  _csvRows.forEach((r,i)=>{
+    const auto=r.credit&&template.income?.length ? 'income|0' : autoDetectCSV(r.memo,r.name);
+    const sign=r.credit?'+':'-';
+    const cls=r.credit?'cr':'dr';
+    const dd=String(r.d).padStart(2,'0')+'/'+String(r.m+1).padStart(2,'0');
+    const desc=r.memo||r.name;
+    html+=`<div class="csv-tx-item">
+      <div class="csv-tx-date">${dd}</div>
+      <div class="csv-tx-desc" title="${esc(desc)}">${esc(desc)}</div>
+      <div class="csv-tx-amt ${cls}">${sign}${fmt(r.amt,true)}</div>
+      <div class="csv-tx-cat"><select data-i="${i}">${csvCatOptions(auto)}</select></div>
+    </div>`;
+  });
+  document.getElementById('csvTxList').innerHTML=html;
+}
+
+function confirmCSV(){
+  const selects=document.querySelectorAll('#csvTxList select');
+  let count=0;
+  selects.forEach(sel=>{
+    if(!sel.value) return;
+    const r=_csvRows[parseInt(sel.dataset.i)];
+    const [section,idxStr]=sel.value.split('|');
+    const rowIdx=parseInt(idxStr);
+    if(!transactions[section]) transactions[section]=[];
+    while(transactions[section].length<=rowIdx) transactions[section].push([]);
+    transactions[section][rowIdx].push({
+      date:String(r.d).padStart(2,'0')+'/'+String(r.m+1).padStart(2,'0'),
+      amount:r.amt,
+      desc:r.memo||r.name
+    });
+    count++;
+  });
+  if(count){ saveTx(); renderAll(); showToast(`${count} transacties geïmporteerd`); }
+  closeCSVModal();
+}
+
+// Drag & drop op de drop zone
+document.addEventListener('DOMContentLoaded',()=>{
+  const zone=document.getElementById('csvDropZone');
+  if(!zone) return;
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+  zone.addEventListener('drop',e=>{
+    e.preventDefault();zone.classList.remove('drag-over');
+    const f=e.dataTransfer.files[0];
+    if(f) handleCSVFile(f);
+  });
+});
 </script>
 </body>
 </html>
