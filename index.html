@@ -104,7 +104,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .table-row { display:grid; grid-template-columns:1fr 80px 80px 56px; padding:0 16px; background:var(--white); border-top:1px dashed var(--border); transition:background .12s; }
 .table-row:hover { background:#faf8f5; }
 .cell-name { padding:8px 0 7px; display:flex; flex-direction:column; gap:4px; }
-.cell-name-top { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--text-dark); min-width:0; }
+.cell-name-top { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--text-dark); min-width:0; overflow:hidden; }
 .cell-name-top > .row-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
 .cat-sign { font-size:11px; color:var(--text-light); width:12px; flex-shrink:0; }
 .del-btn { background:none; border:none; color:var(--sand); cursor:pointer; font-size:13px; line-height:1; padding:0 2px 0 0; transition:color .12s; flex-shrink:0; }
@@ -368,7 +368,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.24</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.25</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -840,7 +840,7 @@ function renderTracker(containerId,key,title,colorClass,placeholder){
     rowsHtml+=`<div class="table-row">
       <div class="cell-name">
         <div class="cell-name-top">
-          <button class="del-btn" onclick="event.stopPropagation();deleteRow('${key}',${i})">&#215;</button>${toggleBtn}<span class="row-name">${esc(row.name)}</span>
+          <button class="del-btn" onclick="event.stopPropagation();deleteRow('${key}',${i})">&#215;</button><span class="row-name">${esc(row.name)}</span>${toggleBtn}
         </div>${progBar(bud,act)}
       </div>
       <div class="cell-bud"><input type="number" inputmode="decimal" placeholder="0" value="${row.budget||''}"
