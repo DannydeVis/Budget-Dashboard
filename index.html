@@ -362,7 +362,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.18</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.19</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -1378,9 +1378,11 @@ function csvCatOptions(selected){
 
 
 function openCSVModal(){
+  _csvRows=[];
   document.getElementById('csvStep1').style.display='';
   document.getElementById('csvStep2').style.display='none';
   document.getElementById('csvFileInput').value='';
+  document.getElementById('csvTxList').innerHTML='';
   document.getElementById('csvModalOverlay').classList.add('open');
 }
 function closeCSVModal(){ document.getElementById('csvModalOverlay').classList.remove('open'); }
@@ -1440,6 +1442,9 @@ function renderCSVPreview(){
 }
 
 function confirmCSV(){
+  try{ _confirmCSVInner(); } catch(e){ showToast('Importfout: '+e.message); console.error('confirmCSV fout:',e); }
+}
+function _confirmCSVInner(){
   const selects=document.querySelectorAll('#csvTxList select');
   // Save learned rules for all confirmed selections
   const rules=loadRules();
@@ -1492,10 +1497,9 @@ function confirmCSV(){
       window._firebaseDB.ref(`u/${uid}/x/${y}/${m}`).set(tx).catch(()=>{});
     }
   }
-  // Reload current month
-  transactions=loadTx(curY,curM);
-  if(count){ renderAll(); showToast(`${count} transacties geïmporteerd`); }
   closeCSVModal();
+  if(count){ transactions=loadTx(curY,curM); renderAll(); showToast(`${count} transacties geïmporteerd`); }
+  else { showToast('Niets geïmporteerd — categoriseer minstens één transactie'); }
 }
 
 // Prevent browser from opening dropped files when modal is closed
