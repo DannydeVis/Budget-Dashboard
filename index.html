@@ -362,7 +362,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.19</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.20</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -1438,6 +1438,14 @@ function renderCSVPreview(){
     </div>`;
   });
   document.getElementById('csvTxList').innerHTML=html;
+  // Explicitly set select values after innerHTML — the `selected` attribute
+  // is unreliable in some browsers (notably iOS Safari) when set via innerHTML.
+  const sels=document.querySelectorAll('#csvTxList select');
+  _csvRows.forEach((r,i)=>{
+    if(!sels[i]) return;
+    const auto=getAutoCategory(r);
+    if(auto) sels[i].value=auto;
+  });
   updateCSVProgress();
 }
 
