@@ -362,7 +362,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.20</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.21</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -653,7 +653,10 @@ function loadTemplate(){
     if(!r) return defaultTemplate();
     const t=JSON.parse(r);
     const empty=SECTIONS.every(k=>!t[k]||t[k].length===0);
-    return empty?defaultTemplate():t;
+    if(empty) return defaultTemplate();
+    // Ensure every section key exists (old saves may be missing newer sections)
+    SECTIONS.forEach(k=>{ if(!Array.isArray(t[k])) t[k]=[]; });
+    return t;
   }catch{return defaultTemplate();}
 }
 function saveTemplate(){ localStorage.setItem(TMPL_KEY,JSON.stringify(template)); }
@@ -690,7 +693,7 @@ function getPrevRollover(){
 
 function buildState(){
   const s={};
-  SECTIONS.forEach(k=>{ s[k]=template[k].map(r=>({name:r.name,budget:r.budget})); });
+  SECTIONS.forEach(k=>{ s[k]=(template[k]||[]).map(r=>({name:r.name,budget:r.budget})); });
   return s;
 }
 function rowActual(key,idx){ return ((transactions[key]||[])[idx]||[]).reduce((s,t)=>s+num(t.amount),0); }
