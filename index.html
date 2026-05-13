@@ -153,6 +153,11 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .tx-amt  { font-weight:500; flex-shrink:0; color:var(--text-dark); }
 .tx-del  { background:none; border:none; color:var(--sand); cursor:pointer; font-size:13px; flex-shrink:0; padding:0; transition:color .12s; }
 .tx-item:hover .tx-del { color:var(--text-light); } .tx-del:hover { color:var(--bad); }
+.tx-list { display:none; }
+.tx-list.expanded { display:block; }
+.tx-toggle { display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 6px;border-radius:10px;background:var(--sand);border:none;cursor:pointer;font-size:11px;color:var(--text-mid);font-family:'DM Sans',sans-serif;transition:background .12s;flex-shrink:0;line-height:1.4; }
+.tx-toggle:hover { background:var(--border);color:var(--text-dark); }
+.tx-toggle.open { background:var(--peach-soft);color:#7a4a30; }
 
 /* DONUT */
 .donut-wrap { display:flex; align-items:center; gap:20px; justify-content:center; padding:20px; }
@@ -362,7 +367,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.21</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.22</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -604,6 +609,7 @@ const _FB_CFG={
   appId:"1:794095927584:web:2e1a429a8fd43f13e01745"
 };
 const RULES_KEY = 'bgt_rules';
+const TRANSFER_SKIP = ['van oranje spaarrekening','van ing spaarrekening','interne overboeking','eigen rekening'];
 const MONTHS   = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
 const COLORS   = ['#c8d8e4','#e8c4b0','#c8d4c0','#e4b4b4','#d4c8e0','#e0d4b4'];
 const SECTIONS = ['income','bills','expenses','savings','debt'];
@@ -624,6 +630,7 @@ const CSV_KEYWORDS = [
 ];
 
 let now=new Date(), curM=now.getMonth(), curY=now.getFullYear(), dirty=false, _csvRows=[];
+let _expandedRows=new Set();
 
 function defaultTemplate(){
   return {
@@ -723,6 +730,7 @@ function progBar(bud,act){
 function markDirty(){dirty=true;document.getElementById('saveBar').classList.add('visible');}
 function saveData(){saveTemplate();saveTx();dirty=false;document.getElementById('saveBar').classList.remove('visible');showToast('Opgeslagen!');}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+function txDay(tx){ return tx.day ?? (tx.date ? parseInt(tx.date) : null); }
 
 function calcAll(){
   function sB(arr){return arr.reduce((s,r)=>s+num(r.budget),0);}
@@ -823,11 +831,16 @@ function renderTracker(containerId,key,title,colorClass,placeholder){
     totalBud+=bud; totalAct+=act;
     const diff=act>0?act-bud:null;
     const txs=(transactions[key]||[])[i]||[];
+    const txRowKey=`${key}|${i}`;
+    const isOpen=_expandedRows.has(txRowKey);
+    const toggleBtn=txs.length>0
+      ?`<button class="tx-toggle${isOpen?' open':''}" onclick="event.stopPropagation();toggleTxList('${key}',${i},this)">${isOpen?'▼':'▶'} ${txs.length}</button>`
+      :'';
     rowsHtml+=`<div class="table-row">
       <div class="cell-name">
         <div class="cell-name-top">
           <button class="del-btn" onclick="event.stopPropagation();deleteRow('${key}',${i})">&#215;</button>
-          ${esc(row.name)}
+          ${esc(row.name)}${toggleBtn}
         </div>${progBar(bud,act)}
       </div>
       <div class="cell-bud"><input type="number" inputmode="decimal" placeholder="0" value="${row.budget||''}"
@@ -836,10 +849,10 @@ function renderTracker(containerId,key,title,colorClass,placeholder){
       <div class="cell-diff">${diffHtml(diff,isIncome)}</div>
     </div>`;
     if(txs.length>0){
-      rowsHtml+=`<div class="tx-list">`;
+      rowsHtml+=`<div class="tx-list${isOpen?' expanded':''}">`;
       txs.forEach((tx,ti)=>{
         rowsHtml+=`<div class="tx-item">
-          <span class="tx-date">${tx.day} ${MONTHS[curM].slice(0,3)}</span>
+          <span class="tx-date">${txDay(tx)??'?'} ${MONTHS[curM].slice(0,3)}</span>
           <span class="tx-desc">${esc(tx.desc)||'<i style="color:var(--text-light)">—</i>'}</span>
           <span class="tx-amt">${fmt(tx.amount,true)}</span>
           <button class="tx-del" onclick="event.stopPropagation();deleteTx('${key}',${i},${ti})">&#215;</button>
@@ -869,6 +882,17 @@ function renderTracker(containerId,key,title,colorClass,placeholder){
       <div class="tval" style="font-size:12px">${diffHtml(tdiff,true)}</div>
     </div>
   </div>`;
+}
+
+function toggleTxList(key,idx,btn){
+  const txRowKey=`${key}|${idx}`;
+  const nowOpen=!_expandedRows.has(txRowKey);
+  if(nowOpen){_expandedRows.add(txRowKey);}else{_expandedRows.delete(txRowKey);}
+  const txList=btn.closest('.table-row').nextElementSibling;
+  if(txList&&txList.classList.contains('tx-list')) txList.classList.toggle('expanded',nowOpen);
+  btn.classList.toggle('open',nowOpen);
+  const count=btn.textContent.replace(/[▼▶]\s*/,'').trim();
+  btn.textContent=(nowOpen?'▼ ':'▶ ')+count;
 }
 
 // RENDER CASHFLOW
@@ -922,7 +946,7 @@ function renderRecentTx(){
       });
     });
   });
-  all.sort((a,b)=>b.day-a.day);
+  all.sort((a,b)=>(txDay(b)??0)-(txDay(a)??0));
   const recent=all.slice(0,8);
   const el=document.getElementById('recentTx');
   if(recent.length===0){
@@ -931,7 +955,7 @@ function renderRecentTx(){
   }
   el.innerHTML=recent.map(tx=>`
     <div class="tx-item" style="padding:9px 20px;">
-      <span class="tx-date">${tx.day} ${MONTHS[curM].slice(0,3)}</span>
+      <span class="tx-date">${txDay(tx)??'?'} ${MONTHS[curM].slice(0,3)}</span>
       <div style="flex:1;min-width:0">
         <div class="tx-desc" style="font-size:13px;color:var(--text-dark)">${esc(tx.desc)||'<i style="color:var(--text-light)">Geen omschrijving</i>'}</div>
         <div style="font-size:11px;color:var(--text-light)">${esc(tx.rowName)} · ${tx.section}</div>
@@ -1259,7 +1283,11 @@ function getAutoCategory(r){
   if(rules[r.name]) return rules[r.name];
   const kw = autoDetectCSV(r.memo, r.name);
   if(kw) return kw;
-  if(r.credit && template.income?.length) return 'income|0';
+  if(r.credit){
+    const hay=(r.name+' '+r.memo).toLowerCase();
+    if(TRANSFER_SKIP.some(p=>hay.includes(p))) return '';
+    if(template.income?.length) return 'income|0';
+  }
   return '';
 }
 
