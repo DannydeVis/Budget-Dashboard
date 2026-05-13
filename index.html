@@ -156,7 +156,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .tx-item:hover .tx-del { color:var(--text-light); } .tx-del:hover { color:var(--bad); }
 .tx-list { display:none; }
 .tx-list.expanded { display:block; }
-.tx-toggle { display:inline-flex;align-items:center;gap:3px;margin-left:auto;padding:1px 6px;border-radius:10px;background:var(--sand);border:none;cursor:pointer;font-size:11px;color:var(--text-mid);font-family:'DM Sans',sans-serif;transition:background .12s;flex-shrink:0;line-height:1.4; }
+.tx-toggle { display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:10px;background:var(--sand);border:none;cursor:pointer;font-size:11px;color:var(--text-mid);font-family:'DM Sans',sans-serif;transition:background .12s;flex-shrink:0;line-height:1.4; }
 .tx-toggle:hover { background:var(--border);color:var(--text-dark); }
 .tx-toggle.open { background:var(--peach-soft);color:#7a4a30; }
 
@@ -368,7 +368,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.23</small></div>
+  <div class="topbar-brand">Budget <span>Dashboard</span> <small style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-light);font-weight:300;letter-spacing:.04em;margin-left:6px;font-style:normal;">v1.24</small></div>
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">&#8592;</button>
     <div class="month-current" id="monthLabel"></div>
@@ -840,8 +840,7 @@ function renderTracker(containerId,key,title,colorClass,placeholder){
     rowsHtml+=`<div class="table-row">
       <div class="cell-name">
         <div class="cell-name-top">
-          <button class="del-btn" onclick="event.stopPropagation();deleteRow('${key}',${i})">&#215;</button>
-          <span class="row-name">${esc(row.name)}</span>${toggleBtn}
+          <button class="del-btn" onclick="event.stopPropagation();deleteRow('${key}',${i})">&#215;</button>${toggleBtn}<span class="row-name">${esc(row.name)}</span>
         </div>${progBar(bud,act)}
       </div>
       <div class="cell-bud"><input type="number" inputmode="decimal" placeholder="0" value="${row.budget||''}"
